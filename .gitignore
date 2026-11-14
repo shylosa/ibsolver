@@ -1,0 +1,30 @@
+/ibsolver.code-workspace
+
+# Dependencies
+frontend/node_modules/
+
+# Wails builds
+build/bin/
+
+# Runtime databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.log
+
+# Environment secrets
+.env
+.env.local
+
+# Generated frontend assets and local tooling
+frontend/dist/
+frontend/wailsjs/
+frontend/package.json.md5
+*.exe
+*.syso
+.cache/

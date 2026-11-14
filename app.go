@@ -1,0 +1,82 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"ibsolver/internal/application"
+	"ibsolver/internal/domain"
+	"ibsolver/internal/storage/sqlite"
+)
+
+// App struct
+type App struct {
+	service    *application.Service
+	store      *sqlite.Store
+	startupErr error
+	initDone   chan struct{}
+}
+
+// NewApp creates a new App application struct
+func NewApp() *App {
+	return &App{initDone: make(chan struct{})}
+}
+
+// startup opens local storage once; bridge calls report initialization failures.
+func (a *App) startup(ctx context.Context) {
+	defer close(a.initDone)
+	path, err := sqlite.DefaultPath()
+	if err == nil {
+		a.store, err = sqlite.Open(path)
+	}
+	a.startupErr = err
+	if err == nil {
+		a.service = application.New(a.store)
+	}
+}
+
+func (a *App) shutdown(ctx context.Context) {
+	<-a.initDone
+	if a.store != nil {
+		a.store.Close()
+	}
+}
+
+func (a *App) ready() error {
+	<-a.initDone
+	if a.startupErr != nil {
+		return fmt.Errorf("Не вдалося відкрити базу даних: %w", a.startupErr)
+	}
+	if a.service == nil {
+		return fmt.Errorf("Застосунок ще не готовий")
+	}
+	return nil
+}
+
+func (a *App) LoadState() (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.Load()
+}
+
+func (a *App) SaveConfiguration(c domain.Configuration, settings domain.Settings) (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.SaveConfiguration(c, settings)
+}
+
+func (a *App) SaveSettings(settings domain.Settings) (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.SaveSettings(settings)
+}
+
+func (a *App) CreateDemo(configurationID int64) (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.CreateDemo(configurationID)
+}

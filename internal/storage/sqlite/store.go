@@ -1,0 +1,299 @@
+package sqlite
+
+import (
+	"bytes"
+	"compress/gzip"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"time"
+
+	"ibsolver/internal/domain"
+	_ "modernc.org/sqlite"
+)
+
+type Store struct{ db *sql.DB }
+
+func DefaultPath() (string, error) {
+	root, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(root, "IBSolver", "ibsolver.db"), nil
+}
+
+func Open(path string) (*Store, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1)
+	s := &Store{db: db}
+	if _, err = db.Exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;"); err == nil {
+		err = s.migrate()
+	}
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	return s, nil
+}
+
+func (s *Store) Close() error { return s.db.Close() }
+
+func (s *Store) migrate() error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var version int
+	if err = tx.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+		return err
+	}
+	if version > 1 {
+		return fmt.Errorf("База даних створена новішою версією IBSolver")
+	}
+	if version == 0 {
+		_, err = tx.Exec(`
+CREATE TABLE configurations (
+ id INTEGER PRIMARY KEY, name TEXT NOT NULL, inputs_json TEXT NOT NULL,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE runs (
+ id INTEGER PRIMARY KEY, configuration_id INTEGER NOT NULL REFERENCES configurations(id),
+ snapshot_json TEXT NOT NULL, result_version TEXT NOT NULL, summary_json TEXT NOT NULL, created_at TEXT NOT NULL
+);
+CREATE INDEX runs_configuration ON runs(configuration_id, id DESC);
+CREATE TABLE run_series (run_id INTEGER PRIMARY KEY REFERENCES runs(id) ON DELETE CASCADE, data BLOB NOT NULL);
+CREATE TABLE app_settings (id INTEGER PRIMARY KEY CHECK(id=1), settings_json TEXT NOT NULL);
+PRAGMA user_version=1;`)
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func now() string { return time.Now().UTC().Format(time.RFC3339Nano) }
+
+func writeSettings(tx *sql.Tx, settings domain.Settings) error {
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO app_settings(id, settings_json) VALUES(1, ?) ON CONFLICT(id) DO UPDATE SET settings_json=excluded.settings_json`, string(data))
+	return err
+}
+
+// SaveConfiguration keeps inputs independent of previous run snapshots.
+func (s *Store) SaveConfiguration(c domain.Configuration, settings domain.Settings) (int64, error) {
+	if err := c.Validate(); err != nil {
+		return 0, err
+	}
+	if err := settings.Validate(); err != nil {
+		return 0, err
+	}
+	data, err := json.Marshal(c.Inputs)
+	if err != nil {
+		return 0, err
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	stamp := now()
+	if c.ID == 0 {
+		result, e := tx.Exec(`INSERT INTO configurations(name, inputs_json, created_at, updated_at) VALUES(?,?,?,?)`, c.Name, string(data), stamp, stamp)
+		if e != nil {
+			return 0, e
+		}
+		c.ID, err = result.LastInsertId()
+	} else {
+		var result sql.Result
+		result, err = tx.Exec(`UPDATE configurations SET name=?, inputs_json=?, updated_at=? WHERE id=?`, c.Name, string(data), stamp, c.ID)
+		if err == nil {
+			count, e := result.RowsAffected()
+			if e != nil {
+				err = e
+			} else if count != 1 {
+				err = fmt.Errorf("Конфігурацію не знайдено")
+			}
+		}
+	}
+	if err != nil {
+		return 0, err
+	}
+	settings.ActiveConfigurationID = c.ID
+	if err = writeSettings(tx, settings); err != nil {
+		return 0, err
+	}
+	return c.ID, tx.Commit()
+}
+
+func (s *Store) SaveSettings(settings domain.Settings) error {
+	if err := settings.Validate(); err != nil {
+		return err
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var exists int
+	if err = tx.QueryRow("SELECT 1 FROM configurations WHERE id=?", settings.ActiveConfigurationID).Scan(&exists); err != nil {
+		return err
+	}
+	if err = writeSettings(tx, settings); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) SaveRun(run domain.Run) error {
+	if err := run.Validate(); err != nil {
+		return err
+	}
+	snapshot, err := json.Marshal(run.Snapshot)
+	if err != nil {
+		return err
+	}
+	summary, err := json.Marshal(run.Summary)
+	if err != nil {
+		return err
+	}
+	raw, err := json.Marshal(run.Chart)
+	if err != nil {
+		return err
+	}
+	var compressed bytes.Buffer
+	writer := gzip.NewWriter(&compressed)
+	if _, err = writer.Write(raw); err != nil {
+		return err
+	}
+	if err = writer.Close(); err != nil {
+		return err
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	result, err := tx.Exec(`INSERT INTO runs(configuration_id, snapshot_json, result_version, summary_json, created_at) VALUES(?,?,?,?,?)`, run.ConfigurationID, string(snapshot), run.ResultVersion, string(summary), now())
+	if err != nil {
+		return err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	if _, err = tx.Exec("INSERT INTO run_series(run_id, data) VALUES(?,?)", id, compressed.Bytes()); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) Load() (domain.State, error) {
+	state := domain.State{Settings: domain.DefaultSettings(), Configurations: []domain.Configuration{}}
+	var settings string
+	err := s.db.QueryRow("SELECT settings_json FROM app_settings WHERE id=1").Scan(&settings)
+	if err == nil {
+		candidate := domain.DefaultSettings()
+		if json.Unmarshal([]byte(settings), &candidate) != nil || candidate.Validate() != nil {
+			state.Warning = "Налаштування пошкоджені; використано стандартні."
+		} else {
+			state.Settings = candidate
+		}
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return state, err
+	}
+	rows, err := s.db.Query("SELECT id, name, inputs_json, created_at, updated_at FROM configurations ORDER BY id")
+	if err != nil {
+		return state, err
+	}
+	for rows.Next() {
+		var c domain.Configuration
+		var inputs string
+		if err = rows.Scan(&c.ID, &c.Name, &inputs, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			rows.Close()
+			return state, err
+		}
+		if json.Unmarshal([]byte(inputs), &c.Inputs) != nil || c.Validate() != nil {
+			state.Warning += " Пошкоджену конфігурацію пропущено."
+			continue
+		}
+		state.Configurations = append(state.Configurations, c)
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return state, err
+	}
+	if len(state.Configurations) == 0 {
+		return state, nil
+	}
+	state.Active = state.Configurations[0]
+	for _, c := range state.Configurations {
+		if c.ID == state.Settings.ActiveConfigurationID {
+			state.Active = c
+			break
+		}
+	}
+	state.Settings.ActiveConfigurationID = state.Active.ID
+	run, err := s.latestRun(state.Active.ID)
+	if err != nil {
+		state.Warning += " Збережені результати пошкоджені або несумісні; параметри відновлено."
+	} else {
+		state.Run = run
+	}
+	state.Stale = run != nil && run.Snapshot != state.Active.Inputs
+	return state, nil
+}
+
+func (s *Store) latestRun(configurationID int64) (*domain.Run, error) {
+	var r domain.Run
+	var snapshot, summary string
+	var blob []byte
+	err := s.db.QueryRow(`SELECT r.id, r.configuration_id, r.snapshot_json, r.result_version, r.summary_json, r.created_at, s.data
+FROM runs r LEFT JOIN run_series s ON s.run_id=r.id WHERE r.configuration_id=? ORDER BY r.id DESC LIMIT 1`, configurationID).Scan(&r.ID, &r.ConfigurationID, &snapshot, &r.ResultVersion, &summary, &r.CreatedAt, &blob)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal([]byte(snapshot), &r.Snapshot); err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal([]byte(summary), &r.Summary); err != nil {
+		return nil, err
+	}
+	reader, err := gzip.NewReader(bytes.NewReader(blob))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	const limit = 20 << 20
+	raw, err := io.ReadAll(io.LimitReader(reader, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > limit {
+		return nil, fmt.Errorf("Завеликий результат")
+	}
+	if err = json.Unmarshal(raw, &r.Chart); err != nil {
+		return nil, err
+	}
+	if err = r.Validate(); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
