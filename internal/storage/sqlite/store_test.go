@@ -35,7 +35,8 @@ func TestV1MigrationPreservesDemoAndAddsNumericalPersistence(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Remove precisely the Stage 2 additions to reproduce the Stage 1 schema.
-	if _, err = s.db.Exec(`ALTER TABLE configurations DROP COLUMN numerical_json;
+	if _, err = s.db.Exec(`DROP TABLE external_results;
+ALTER TABLE configurations DROP COLUMN numerical_json;
 ALTER TABLE runs DROP COLUMN numerical_snapshot_json;
 PRAGMA user_version=1;`); err != nil {
 		t.Fatal(err)
@@ -150,7 +151,7 @@ func TestRestartRestoresInputsSeriesAndSettings(t *testing.T) {
 		t.Fatal("stored numeric data or immutable snapshot changed")
 	}
 	var version int
-	if err = s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 2 {
+	if err = s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 3 {
 		t.Fatalf("migration version=%d err=%v", version, err)
 	}
 	var count int

@@ -183,7 +183,10 @@ func (s *Service) ExportCSV(id int64) ([]byte, error) {
 	if state.Active.ID != id || state.Run == nil {
 		return nil, fmt.Errorf("Немає збереженого запуску для експорту")
 	}
-	d := state.Run.Chart
+	return exportChartCSV(state.Run.Chart)
+}
+
+func exportChartCSV(d domain.ChartData) ([]byte, error) {
 	if err := d.Validate(); err != nil {
 		return nil, err
 	}

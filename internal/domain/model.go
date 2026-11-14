@@ -234,10 +234,11 @@ func (s Settings) Validate() error {
 }
 
 type State struct {
-	Configurations []Configuration `json:"configurations"`
-	Active         Configuration   `json:"active"`
-	Settings       Settings        `json:"settings"`
-	Run            *Run            `json:"run"`
-	Warning        string          `json:"warning"`
-	Stale          bool            `json:"stale"`
+	ExternalResults []ExternalResult `json:"externalResults"`
+	Configurations  []Configuration  `json:"configurations"`
+	Active          Configuration    `json:"active"`
+	Settings        Settings         `json:"settings"`
+	Run             *Run             `json:"run"`
+	Warning         string           `json:"warning"`
+	Stale           bool             `json:"stale"`
 }

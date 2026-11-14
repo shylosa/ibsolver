@@ -73,11 +73,11 @@ func (a *App) saveExchange(data []byte, extension, filename string) (bool, error
 		path += "." + extension
 	}
 	if _, err := os.Stat(path); err == nil {
-		answer, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{Type: runtime.QuestionDialog, Title: "Замінити файл?", Message: "Файл уже існує. Замінити його?", Buttons: []string{"Так", "Скасувати"}, DefaultButton: "Скасувати", CancelButton: "Скасувати"})
+		answer, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{Type: runtime.QuestionDialog, Title: "Замінити файл?", Message: "Файл уже існує. Замінити його?", Buttons: []string{"Так", "Скасувати"}, DefaultButton: "No", CancelButton: "No"})
 		if err != nil {
 			return false, err
 		}
-		if answer != "Так" {
+		if answer != "Yes" && answer != "Так" {
 			return false, nil
 		}
 	} else if !os.IsNotExist(err) {

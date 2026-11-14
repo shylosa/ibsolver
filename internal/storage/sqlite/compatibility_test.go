@@ -63,7 +63,12 @@ func TestLegacyFormatsPreserveStoredBytesAcrossReopen(t *testing.T) {
 					t.Fatal(err)
 				}
 				if schema == 1 {
-					if _, err = s.db.Exec(`ALTER TABLE configurations DROP COLUMN numerical_json; ALTER TABLE runs DROP COLUMN numerical_snapshot_json; PRAGMA user_version=1;`); err != nil {
+					if _, err = s.db.Exec(`DROP TABLE external_results;
+ALTER TABLE configurations DROP COLUMN numerical_json; ALTER TABLE runs DROP COLUMN numerical_snapshot_json; PRAGMA user_version=1;`); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					if _, err = s.db.Exec(`DROP TABLE external_results; PRAGMA user_version=2;`); err != nil {
 						t.Fatal(err)
 					}
 				}

@@ -58,7 +58,7 @@ func (s *Store) migrate() error {
 	if err = tx.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 2 {
+	if version > 3 {
 		return fmt.Errorf("База даних створена новішою версією IBSolver")
 	}
 	if version == 0 {
@@ -83,6 +83,20 @@ PRAGMA user_version=1;`)
 		if _, err = tx.Exec(`ALTER TABLE configurations ADD COLUMN numerical_json TEXT NOT NULL DEFAULT 'null';
 ALTER TABLE runs ADD COLUMN numerical_snapshot_json TEXT NOT NULL DEFAULT 'null';
 PRAGMA user_version=2;`); err != nil {
+			return err
+		}
+	}
+	if version < 3 {
+		if _, err = tx.Exec(`CREATE TABLE external_results (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ configuration_id INTEGER NOT NULL REFERENCES configurations(id),
+ name TEXT NOT NULL, imported_at TEXT NOT NULL, source TEXT NOT NULL,
+ format_version TEXT NOT NULL, checksum TEXT NOT NULL, chart_json BLOB NOT NULL
+);
+CREATE INDEX external_results_configuration ON external_results(configuration_id, id DESC);
+CREATE TRIGGER external_results_immutable BEFORE UPDATE ON external_results
+BEGIN SELECT RAISE(ABORT, 'External results are immutable'); END;
+PRAGMA user_version=3;`); err != nil {
 			return err
 		}
 	}
@@ -269,6 +283,10 @@ func (s *Store) Load() (domain.State, error) {
 		state.Warning += " Збережені результати пошкоджені або несумісні; параметри відновлено."
 	} else {
 		state.Run = run
+	}
+	state.ExternalResults, err = s.ListExternal(state.Active.ID)
+	if err != nil {
+		return state, err
 	}
 	state.Stale = state.Run != nil && !state.Run.Matches(state.Active)
 	if state.Run != nil {

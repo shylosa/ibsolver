@@ -95,3 +95,13 @@ input[aria-invalid=true] { border-color: #e38474; }
 .actions { flex-wrap: wrap; align-items: center; }
 main { grid-template-columns: minmax(180px, var(--results-width)) 7px minmax(0, 1fr); }
 @media (max-width: 850px) { .preparation-grid.coefficients { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.history { margin-top: 12px; }
+.history select { width: 100%; min-width: 0; }
+.history-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.history-actions button { font-size: 11px; padding: 4px 7px; }
+#external-dialog { width: min(580px, calc(100vw - 48px)); max-height: calc(100vh - 48px); overflow-y: auto; color: #dce5ef; background: #19222e; border: 1px solid #6597bc; border-radius: 6px; }
+#external-dialog::backdrop { background: #0008; }
+#external-dialog form { display: block; }
+#external-dialog label { max-width: none; margin-bottom: 12px; }
+#external-dialog dl { grid-template-columns: minmax(80px, 1fr) minmax(0, 3fr); }

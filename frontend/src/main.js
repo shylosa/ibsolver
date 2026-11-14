@@ -1,8 +1,9 @@
 import './style.css';
-import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, OpenSeriesCSV} from '../wailsjs/go/main/App';
+import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV} from '../wailsjs/go/main/App';
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import {preparationFields, parsePreparation, displayPreparation} from './preparation.mjs';
+import {externalMetadata} from './external.mjs';
 import {DebouncedTask} from './debounce.mjs';
 
 document.querySelector('#app').innerHTML = `
@@ -44,12 +45,14 @@ document.querySelector('#app').innerHTML = `
         <button id="demo" type="button" class="primary" hidden>Створити DEMO</button><span id="preparation-explanation">Розрахунковий модуль ще не реалізовано.</span><button id="cancel" type="button" disabled>Скасувати</button></div></form>
 </section>
 <main><aside id="results"><div class="section-title">Результати <span id="result-kind" class="badge">RK45</span></div>
+    <label class="history">Зовнішні результати<select id="external-results" aria-label="Збережені зовнішні результати"></select></label><div class="history-actions"><button id="external-metadata">Метадані</button><button id="external-delete">Видалити…</button></div>
     <p id="result-state"></p><dl id="summary"></dl><h3 id="statistics-title" hidden>Інтегратор RK45</h3><dl id="statistics" hidden></dl></aside>
     <div id="splitter" role="separator" aria-label="Ширина результатів" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="480" tabindex="0"></div>
-    <section class="chart-workspace"><div class="chart-title"><span>Часові ряди</span><span id="chart-label">Збережених даних немає</span><button id="chart-reset" title="Колесо — масштаб; перетягування — зсув; подвійний клік — увесь діапазон">Увесь графік</button><button id="import-csv">Відкрити CSV</button><button id="export-csv" disabled>CSV</button></div>
+    <section class="chart-workspace"><div class="chart-title"><span>Часові ряди</span><span id="chart-label">Збережених даних немає</span><button id="chart-reset" title="Колесо — масштаб; перетягування — зсув; подвійний клік — увесь діапазон">Увесь графік</button><button id="import-csv">Імпорт CSV</button><button id="export-csv" disabled>CSV</button></div>
         <div id="legend" aria-label="Видимі ряди"></div>
         <div class="canvas-wrap"><canvas id="chart" aria-label="Спільне поле нормалізованих часових рядів"></canvas></div><div id="cursor" aria-live="off"></div></section></main>
 <dialog id="discard-dialog"><p>Не вдалося зберегти поточну чернетку. Поверніться до редагування або явно відкиньте незбережені зміни.</p><form method="dialog"><button value="return" autofocus>Повернутися до редагування</button><button value="discard">Відкинути незбережені зміни</button></form></dialog>
+<dialog id="external-dialog"><h3 id="external-dialog-title"></h3><p>Числові часові ряди з CSV. Фізичний зміст визначає джерело даних.</p><dl id="external-details"></dl><form method="dialog"><label>Назва<input id="external-name" maxlength="120" required></label><div class="actions"><button id="external-confirm" value="save">Зберегти результат</button><button value="cancel" formnovalidate autofocus>Закрити / скасувати</button></div></form></dialog>
 <footer><span id="status" role="status">Відкриття бази даних…</span><span>SQLite · локальне збереження</span></footer>`;
 
 const $ = id => document.getElementById(id);
@@ -83,7 +86,8 @@ function setBusy(value) {
     busy = value;
     document.querySelectorAll('button, select, .parameters input, #legend input').forEach(el => { if (!el.closest('dialog')) el.disabled = value || el.id === 'cancel'; });
     $('splitter').setAttribute('aria-disabled', String(value));
-    $('export-csv').disabled = value || !visibleRun() || !!externalChart;
+    $('export-csv').disabled = value || !(visibleRun() || externalChart);
+    $('external-metadata').disabled = $('external-delete').disabled = value || !externalChart;
     $('chart-reset').disabled = value || !(visibleRun() || externalChart);
     $('save').disabled = value || !dirty;
     if (state) updateMode();
@@ -198,6 +202,7 @@ function display(next) {
     }
     $('save-state').textContent = 'Збережено';
     width(state.settings.resultsWidth);
+    renderHistory();
     const run = visibleRun();
     $('result-state').textContent = resultState();
     $('result-state').classList.toggle('stale', state.stale);
@@ -246,7 +251,7 @@ async function flushForTransition() {
 function markDirty(field) {
     dirty = true; revision++; $('save').disabled = busy;
     $('save-state').textContent = 'Є незбережені зміни';
-    if (visibleRun() && field.id !== 'name') {
+    if (!externalChart && visibleRun() && field.id !== 'name') {
         let changed = true;
         try {
             const mode = state.active.mode;
@@ -271,8 +276,10 @@ function queueSave() {
         $('save-state').textContent = 'Збережено'; $('save').disabled = true;
         const option = [...$('configurations').options].find(item => Number(item.value) === state.active.id);
         if (option) option.textContent = state.active.name;
-        $('result-state').textContent = resultState();
-        $('result-state').classList.toggle('stale', state.stale);
+        if (!externalChart) {
+            $('result-state').textContent = resultState();
+            $('result-state').classList.toggle('stale', state.stale);
+        }
         status(state.warning || 'Конфігурацію збережено.');
     });
     draftQueue = request.catch(error => {
@@ -310,7 +317,8 @@ $('export-json').addEventListener('click', () => operation(async () => {
     if (await ExportConfiguration(state.active.id)) status('Конфігурацію експортовано.');
 }));
 $('export-csv').addEventListener('click', () => operation(async () => {
-    if (await ExportCSV(state.active.id)) status('Часові ряди збереженого запуску експортовано.');
+    const saved = externalChart ? await ExportExternalCSV(state.active.id, externalChart.id) : await ExportCSV(state.active.id);
+    if (saved) status('Збережені часові ряди експортовано без перетворень графіка.');
 }));
 $('inputs').addEventListener('submit', event => { event.preventDefault(); operation(save); });
 $('configurations').addEventListener('change', event => {
@@ -387,11 +395,65 @@ EventsOn('close-request', () => operation(async () => {
     await CloseWindow();
 }));
 
+function renderHistory() {
+    $('external-results').replaceChildren(new Option('— Збережений запуск IBSolver —', ''),
+        ...(state.externalResults || []).map(r => new Option(`${r.name} · ${new Date(r.importedAt).toLocaleString('uk-UA')}`, r.id)));
+    $('external-results').value = externalChart ? String(externalChart.id) : '';
+}
+function showExternal(result) {
+    externalChart = result;
+    chart.set(result.chart, state.settings);
+    $('external-results').value = String(result.id);
+    $('result-kind').textContent = 'ЗОВНІШНІ';
+    $('result-state').textContent = 'Збережений зовнішній результат · не обчислено IBSolver';
+    $('result-state').classList.remove('stale');
+    $('chart-label').textContent = `Зовнішній CSV · ${result.name}`;
+    $('statistics').hidden = $('statistics-title').hidden = true;
+    fillMetadata($('summary'), [['Назва', result.name], ...externalMetadata(result)]);
+}
+function fillMetadata(element, rows) {
+    element.replaceChildren();
+    for (const [key, value] of rows) {
+        const dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = key; dd.textContent = value; element.append(dt, dd);
+    }
+}
+function externalDialog(result, preview) {
+    $('external-dialog-title').textContent = preview ? `Імпорт до «${state.active.name}»` : result.name;
+    fillMetadata($('external-details'), externalMetadata(result));
+    $('external-name').value = result.name.slice(0, 120);
+    $('external-name').readOnly = !preview;
+    $('external-confirm').hidden = !preview;
+    const dialog = $('external-dialog');
+    dialog.returnValue = 'cancel';
+    const closed = new Promise(resolve => dialog.addEventListener('close', () => resolve(dialog.returnValue), {once: true}));
+    dialog.showModal();
+    return closed;
+}
+$('external-results').addEventListener('change', event => {
+    const id = Number(event.target.value);
+    operation(async () => {
+        if (id) showExternal(await OpenExternalResult(state.active.id, id));
+        else { await flushForTransition(); display(await LoadState()); }
+    }).finally(() => { $('external-results').value = externalChart ? String(externalChart.id) : ''; });
+});
+$('external-metadata').addEventListener('click', () => operation(() => externalDialog(externalChart, false)));
+$('external-delete').addEventListener('click', () => operation(async () => {
+    const id = externalChart.id;
+    await flushForTransition();
+    const next = await DeleteExternalResult(state.active.id, id);
+    if (next) { display(next); status('Зовнішній результат видалено.'); }
+}));
 $('import-csv').addEventListener('click', () => operation(async () => {
-    const data = await OpenSeriesCSV();
-    if (!data) return;
-    externalChart = data;
-    chart.set(data, state.settings);
-    $('chart-label').textContent = 'Незалежний CSV · час у секундах';
-    status('Відкрито незалежні часові ряди CSV. Це не результат поточної конфігурації; дані не записуються в БД.');
+    await flushForTransition();
+    const preview = await PreviewExternalImport(state.active.id);
+    if (!preview) return;
+    try {
+        if (await externalDialog(preview, true) !== 'save') { status('Імпорт скасовано.'); return; }
+        const result = await SaveExternalImport(state.active.id, $('external-name').value);
+        state.externalResults ||= [];
+        state.externalResults.unshift(result);
+        renderHistory(); showExternal(result);
+        status('Зовнішній результат збережено в SQLite.');
+    } finally { await CancelExternalImport(); }
 }));

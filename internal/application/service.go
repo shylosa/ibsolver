@@ -11,9 +11,10 @@ import (
 )
 
 type Service struct {
-	mu     sync.Mutex
-	store  *sqlite.Store
-	cancel context.CancelFunc
+	mu              sync.Mutex
+	store           *sqlite.Store
+	cancel          context.CancelFunc
+	pendingExternal *domain.ExternalResult
 }
 
 func New(store *sqlite.Store) *Service { return &Service{store: store} }
