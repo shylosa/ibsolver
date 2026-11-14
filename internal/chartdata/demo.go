@@ -12,7 +12,8 @@ func Demo(inputs domain.Inputs) (domain.Run, error) {
 	}
 	d := domain.ChartData{Time: make([]float64, inputs.Samples), Series: make([]domain.Series, 6)}
 	for j := range d.Series {
-		d.Series[j] = domain.Series{Name: []string{"Синус", "Косинус", "Затухання", "Хвиля", "Імпульс", "Перехід"}[j], Unit: "ум. од.", Values: make([]float64, inputs.Samples)}
+		reference := inputs.Amplitude * float64(j+1)
+		d.Series[j] = domain.Series{ID: domain.SeriesID(domain.ModeDemo, j), Reference: &reference, Name: []string{"Синус", "Косинус", "Затухання", "Хвиля", "Імпульс", "Перехід"}[j], Unit: "ум. од.", Values: make([]float64, inputs.Samples)}
 	}
 	for i := range d.Time {
 		t := inputs.Duration * float64(i) / float64(inputs.Samples-1)
@@ -23,5 +24,5 @@ func Demo(inputs domain.Inputs) (domain.Run, error) {
 			d.Series[j].Values[i] = inputs.Amplitude * float64(j+1) * v
 		}
 	}
-	return domain.Run{Snapshot: inputs, ResultVersion: domain.ResultVersion, Summary: domain.Summary{Kind: "DEMO", Samples: inputs.Samples, Duration: inputs.Duration}, Chart: d}, nil
+	return domain.Run{Mode: domain.ModeDemo, Snapshot: domain.Parameters{Demo: &inputs}, ResultVersion: domain.ResultVersion, Summary: domain.Summary{Kind: "DEMO", Samples: inputs.Samples, Duration: inputs.Duration}, Chart: d}, nil
 }

@@ -32,7 +32,7 @@ func Oscillator(ctx context.Context, input domain.NumericalExample) (domain.Run,
 	names := []string{"Зміщення", "Швидкість", "Прискорення", "Кінетична енергія", "Потенціальна енергія", "Повна енергія"}
 	units := []string{"м", "м/с", "м/с²", "Дж", "Дж", "Дж"}
 	for j := range chart.Series {
-		chart.Series[j] = domain.Series{Name: names[j], Unit: units[j], Values: make([]float64, p.Samples)}
+		chart.Series[j] = domain.Series{ID: domain.SeriesID(domain.ModeOscillator, j), Name: names[j], Unit: units[j], Values: make([]float64, p.Samples)}
 	}
 	for i, point := range result.Points {
 		if err := ctx.Err(); err != nil {
@@ -47,7 +47,7 @@ func Oscillator(ctx context.Context, input domain.NumericalExample) (domain.Run,
 	}
 	last := p.Samples - 1
 	summary := &domain.NumericalSummary{FinalPosition: chart.Series[0].Values[last], FinalVelocity: chart.Series[1].Values[last], InitialEnergy: chart.Series[5].Values[0], FinalEnergy: chart.Series[5].Values[last], Statistics: result.Statistics}
-	run := domain.Run{NumericalSnapshot: &input, ResultVersion: domain.NumericalVersion, Summary: domain.Summary{Kind: "NUMERICAL", Samples: p.Samples, Duration: p.Duration, Numerical: summary}, Chart: chart}
+	run := domain.Run{Mode: domain.ModeOscillator, Snapshot: domain.Parameters{Oscillator: &input}, ResultVersion: domain.NumericalVersion, Summary: domain.Summary{Kind: "NUMERICAL", Samples: p.Samples, Duration: p.Duration, Numerical: summary}, Chart: chart}
 	if err := run.Validate(); err != nil {
 		return domain.Run{}, fmt.Errorf("Некоректний результат осцилятора: %w", err)
 	}

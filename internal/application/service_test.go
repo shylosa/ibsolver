@@ -27,13 +27,21 @@ func TestLoadNeverGeneratesDemo(t *testing.T) {
 	if _, err = service.CreateDemo(state.Active.ID + 100); err == nil {
 		t.Fatal("accepted wrong configuration")
 	}
+	c := state.Active
+	c.Mode = domain.ModeDemo
+	state, err = service.SaveConfiguration(c, state.Settings)
+	if err != nil {
+		t.Fatal(err)
+	}
 	state, err = service.CreateDemo(state.Active.ID)
 	if err != nil || state.Run == nil {
 		t.Fatalf("demo: %v", err)
 	}
 	runID := state.Run.ID
 	changed := state.Active
-	changed.Inputs.Frequency = 2
+	d := *changed.Parameters.Demo
+	d.Frequency = 2
+	changed.Parameters.Demo = &d
 	state, err = service.SaveConfiguration(changed, state.Settings)
 	if err != nil || !state.Stale {
 		t.Fatalf("edit: %v", err)
@@ -45,7 +53,7 @@ func TestLoadNeverGeneratesDemo(t *testing.T) {
 	}
 	defer store.Close()
 	state, err = New(store).Load()
-	if err != nil || state.Run == nil || state.Run.ID != runID || !state.Stale || state.Active.Inputs != changed.Inputs {
+	if err != nil || state.Run == nil || state.Run.ID != runID || !state.Stale || *state.Active.Parameters.Demo != *changed.Parameters.Demo {
 		t.Fatalf("restart: %+v %v", state, err)
 	}
 	if state.Run.ResultVersion != domain.ResultVersion {
@@ -70,12 +78,12 @@ func TestNumericalCalculationRestartAndFailurePreservesResult(t *testing.T) {
 	}
 	previous := *state.Run
 	c := state.Active
-	n := *c.Numerical
+	n := *c.Parameters.Oscillator
 	n.Model.Velocity = 0.5
 	n.Solver.RelTolerance = 1e-8
-	c.Numerical = &n
+	c.Parameters.Oscillator = &n
 	state, err = service.SaveConfiguration(c, state.Settings)
-	if err != nil || !state.Stale || *state.Run.NumericalSnapshot == n {
+	if err != nil || !state.Stale || *state.Run.Snapshot.Oscillator == n {
 		t.Fatal("snapshot changed with inputs", err)
 	}
 	store.Close()
@@ -86,7 +94,7 @@ func TestNumericalCalculationRestartAndFailurePreservesResult(t *testing.T) {
 	defer store.Close()
 	service = New(store)
 	state, err = service.Load()
-	if err != nil || !state.Stale || !reflect.DeepEqual(*state.Run, previous) || *state.Active.Numerical != n {
+	if err != nil || !state.Stale || !reflect.DeepEqual(*state.Run, previous) || *state.Active.Parameters.Oscillator != n {
 		t.Fatalf("restart lost numeric data/snapshot/settings: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -98,7 +106,7 @@ func TestNumericalCalculationRestartAndFailurePreservesResult(t *testing.T) {
 		t.Fatal("accepted wrong configuration")
 	}
 	n.Solver.MaxSteps = 1
-	c.Numerical = &n
+	c.Parameters.Oscillator = &n
 	state, err = service.SaveConfiguration(c, state.Settings)
 	if err != nil {
 		t.Fatal(err)
@@ -132,10 +140,10 @@ func TestCancelActiveCalculationDoesNotBlockLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := state.Active
-	n := *c.Numerical
+	n := *c.Parameters.Oscillator
 	n.Model.Duration, n.Model.Samples = 10000, 2
 	n.Solver.InitialStep, n.Solver.MaxStep, n.Solver.MaxSteps = 1e-5, 1e-5, 1000000
-	c.Numerical = &n
+	c.Parameters.Oscillator = &n
 	state, err = service.SaveConfiguration(c, state.Settings)
 	if err != nil {
 		t.Fatal(err)
@@ -169,5 +177,64 @@ func TestCancelActiveCalculationDoesNotBlockLoad(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("active cancellation timed out")
+	}
+}
+func TestModeSwitchPreservesParametersAndRun(t *testing.T) {
+	store, err := sqlite.Open(filepath.Join(t.TempDir(), "modes.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	service := New(store)
+	state, err := service.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := state.Active
+	// Invalid inactive demo parameters do not obstruct an oscillator run.
+	c.Parameters.Demo.Duration = -1
+	state, err = service.SaveConfiguration(c, state.Settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err = service.Calculate(t.Context(), c.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	numerical := *state.Run
+	if _, err = service.CreateDemo(c.ID); err == nil {
+		t.Fatal("accepted demo action in oscillator mode")
+	}
+	c = state.Active
+	c.Mode = domain.ModeDemo
+	if _, err = service.SaveConfiguration(c, state.Settings); err == nil {
+		t.Fatal("activated invalid demo")
+	}
+	c.Parameters.Demo.Duration = 2
+	c.Parameters.Demo.Amplitude = 3
+	state, err = service.SaveConfiguration(c, state.Settings)
+	if err != nil || !state.Stale || !reflect.DeepEqual(*state.Run, numerical) {
+		t.Fatal("mode switch lost run", err)
+	}
+	if _, err = service.Calculate(t.Context(), c.ID); err == nil {
+		t.Fatal("accepted numerical action in demo mode")
+	}
+	savedParameters := state.Active.Parameters
+	state, err = service.CreateDemo(c.ID)
+	if err != nil || state.Stale || state.Run.Mode != domain.ModeDemo {
+		t.Fatal("demo failed", err)
+	}
+	demo := *state.Run
+	c = state.Active
+	c.Mode = domain.ModeOscillator
+	state, err = service.SaveConfiguration(c, state.Settings)
+	if err != nil || !state.Stale || !reflect.DeepEqual(state.Active.Parameters, savedParameters) || !reflect.DeepEqual(*state.Run, demo) {
+		t.Fatal("switch lost parameters or run", err)
+	}
+	c = state.Active
+	c.Mode = domain.ModeDemo
+	state, err = service.SaveConfiguration(c, state.Settings)
+	if err != nil || state.Stale || !reflect.DeepEqual(*state.Run, demo) {
+		t.Fatal("switch back changed result", err)
 	}
 }

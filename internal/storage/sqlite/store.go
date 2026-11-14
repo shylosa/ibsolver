@@ -108,11 +108,7 @@ func (s *Store) SaveConfiguration(c domain.Configuration, settings domain.Settin
 	if err := settings.Validate(); err != nil {
 		return 0, err
 	}
-	data, err := json.Marshal(c.Inputs)
-	if err != nil {
-		return 0, err
-	}
-	numerical, err := json.Marshal(c.Numerical)
+	data, err := json.Marshal(parameterRecord{Format: 1, Mode: c.Mode, Parameters: c.Parameters})
 	if err != nil {
 		return 0, err
 	}
@@ -123,14 +119,14 @@ func (s *Store) SaveConfiguration(c domain.Configuration, settings domain.Settin
 	defer tx.Rollback()
 	stamp := now()
 	if c.ID == 0 {
-		result, e := tx.Exec(`INSERT INTO configurations(name, inputs_json, numerical_json, created_at, updated_at) VALUES(?,?,?,?,?)`, c.Name, string(data), string(numerical), stamp, stamp)
+		result, e := tx.Exec(`INSERT INTO configurations(name, inputs_json, numerical_json, created_at, updated_at) VALUES(?,?,?,?,?)`, c.Name, string(data), "null", stamp, stamp)
 		if e != nil {
 			return 0, e
 		}
 		c.ID, err = result.LastInsertId()
 	} else {
 		var result sql.Result
-		result, err = tx.Exec(`UPDATE configurations SET name=?, inputs_json=?, numerical_json=?, updated_at=? WHERE id=?`, c.Name, string(data), string(numerical), stamp, c.ID)
+		result, err = tx.Exec(`UPDATE configurations SET name=?, inputs_json=?, numerical_json=?, updated_at=? WHERE id=?`, c.Name, string(data), "null", stamp, c.ID)
 		if err == nil {
 			count, e := result.RowsAffected()
 			if e != nil {
@@ -173,11 +169,7 @@ func (s *Store) SaveRun(run domain.Run) error {
 	if err := run.Validate(); err != nil {
 		return err
 	}
-	snapshot, err := json.Marshal(run.Snapshot)
-	if err != nil {
-		return err
-	}
-	numerical, err := json.Marshal(run.NumericalSnapshot)
+	snapshot, err := json.Marshal(parameterRecord{Format: 1, Mode: run.Mode, Parameters: run.Snapshot})
 	if err != nil {
 		return err
 	}
@@ -202,7 +194,7 @@ func (s *Store) SaveRun(run domain.Run) error {
 		return err
 	}
 	defer tx.Rollback()
-	result, err := tx.Exec(`INSERT INTO runs(configuration_id, snapshot_json, numerical_snapshot_json, result_version, summary_json, created_at) VALUES(?,?,?,?,?,?)`, run.ConfigurationID, string(snapshot), string(numerical), run.ResultVersion, string(summary), now())
+	result, err := tx.Exec(`INSERT INTO runs(configuration_id, snapshot_json, numerical_snapshot_json, result_version, summary_json, created_at) VALUES(?,?,?,?,?,?)`, run.ConfigurationID, string(snapshot), "null", run.ResultVersion, string(summary), now())
 	if err != nil {
 		return err
 	}
@@ -230,24 +222,29 @@ func (s *Store) Load() (domain.State, error) {
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return state, err
 	}
-	rows, err := s.db.Query("SELECT id, name, inputs_json, numerical_json, created_at, updated_at FROM configurations ORDER BY id")
+	rows, err := s.db.Query("SELECT id, name, inputs_json, numerical_json, created_at, updated_at, (SELECT max(id) FROM runs WHERE configuration_id=configurations.id), coalesce((SELECT result_version FROM runs WHERE configuration_id=configurations.id ORDER BY id DESC LIMIT 1), '') FROM configurations ORDER BY id")
 	if err != nil {
 		return state, err
 	}
 	for rows.Next() {
 		var c domain.Configuration
-		var inputs, numerical string
-		if err = rows.Scan(&c.ID, &c.Name, &inputs, &numerical, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		var inputs, numerical, version string
+		if err = rows.Scan(&c.ID, &c.Name, &inputs, &numerical, &c.CreatedAt, &c.UpdatedAt, &c.LatestRunID, &version); err != nil {
 			rows.Close()
 			return state, err
 		}
-		if json.Unmarshal([]byte(inputs), &c.Inputs) != nil || json.Unmarshal([]byte(numerical), &c.Numerical) != nil || c.Validate() != nil {
-			state.Warning += " Пошкоджену конфігурацію пропущено."
+		record, decodeErr := decodeParameters(inputs, numerical, version)
+		c.Mode, c.Parameters = record.Mode, record.Parameters
+		if decodeErr != nil || c.Validate() != nil {
+			state.Warning += " Пошкоджену або несумісну конфігурацію пропущено."
 			continue
 		}
-		if c.Numerical == nil {
-			n := domain.DefaultNumerical()
-			c.Numerical = &n
+		defaults := domain.DefaultParameters()
+		if c.Parameters.Demo == nil {
+			c.Parameters.Demo = defaults.Demo
+		}
+		if c.Parameters.Oscillator == nil {
+			c.Parameters.Oscillator = defaults.Oscillator
 		}
 		state.Configurations = append(state.Configurations, c)
 	}
@@ -273,7 +270,10 @@ func (s *Store) Load() (domain.State, error) {
 	} else {
 		state.Run = run
 	}
-	state.Stale = run != nil && !run.Matches(state.Active)
+	state.Stale = state.Run != nil && !state.Run.Matches(state.Active)
+	if state.Run != nil {
+		state.Settings.BindSeries(state.Run.Chart.Series)
+	}
 	return state, nil
 }
 
@@ -289,12 +289,11 @@ FROM runs r LEFT JOIN run_series s ON s.run_id=r.id WHERE r.configuration_id=? O
 	if err != nil {
 		return nil, err
 	}
-	if err = json.Unmarshal([]byte(snapshot), &r.Snapshot); err != nil {
+	record, err := decodeParameters(snapshot, numerical, r.ResultVersion)
+	if err != nil {
 		return nil, err
 	}
-	if err = json.Unmarshal([]byte(numerical), &r.NumericalSnapshot); err != nil {
-		return nil, err
-	}
+	r.Mode, r.Snapshot = record.Mode, record.Parameters
 	if err = json.Unmarshal([]byte(summary), &r.Summary); err != nil {
 		return nil, err
 	}
@@ -313,6 +312,11 @@ FROM runs r LEFT JOIN run_series s ON s.run_id=r.id WHERE r.configuration_id=? O
 	}
 	if err = json.Unmarshal(raw, &r.Chart); err != nil {
 		return nil, err
+	}
+	for i := range r.Chart.Series {
+		if r.Chart.Series[i].ID == "" {
+			r.Chart.Series[i].ID = domain.SeriesID(r.Mode, i)
+		}
 	}
 	if err = r.Validate(); err != nil {
 		return nil, err

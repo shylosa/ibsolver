@@ -1,5 +1,22 @@
 const colors = ['#60c5fa', '#f1b75e', '#b49af8', '#6ed6b2', '#ed8598', '#c9d86a'];
 
+export const verticalLimit = 1.25;
+
+export function normalizationDivisor(series) {
+    if (series.reference !== undefined && series.reference !== null) {
+        if (!Number.isFinite(series.reference) || series.reference <= 0) {
+            throw new Error('Опорне значення серії має бути скінченним і додатним.');
+        }
+        return series.reference;
+    }
+    return series.values.reduce((max, value) => Math.max(max, Math.abs(value)), 0) || 1;
+}
+
+export function seriesPreference(settings, series, index) {
+    settings.series ||= {};
+    return settings.series[series.id] ||= {visible: settings.visible?.[index] ?? true, scale: settings.scales?.[index] ?? 1};
+}
+
 // This component only consumes numeric series and display preferences.
 export class TimeSeriesChart {
     constructor(canvas, legend, cursor, onChange) {
@@ -10,7 +27,7 @@ export class TimeSeriesChart {
         canvas.addEventListener('pointermove', event => {
             if (!this.data) return;
             const rect = canvas.getBoundingClientRect();
-            const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left - 54) / (rect.width - 76)));
+            const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left - 54) / Math.max(1, rect.width - 76)));
             const times = this.data.time;
             const target = times[0] + fraction * (times.at(-1) - times[0]);
             let low = 0, high = times.length - 1;
@@ -24,20 +41,23 @@ export class TimeSeriesChart {
     set(data, settings) {
         this.data = data;
         this.settings = settings;
+        this.divisors = (data?.series || []).map(normalizationDivisor);
         this.legend.replaceChildren();
         (data?.series || []).forEach((series, i) => {
+            const preference = seriesPreference(settings, series, i);
             const row = document.createElement('div'); row.className = 'legend-item';
             const label = document.createElement('label');
-            const check = document.createElement('input'); check.type = 'checkbox'; check.checked = settings.visible[i];
-            check.addEventListener('change', () => { settings.visible[i] = check.checked; this.draw(); this.onChange(); });
+            const check = document.createElement('input'); check.type = 'checkbox'; check.checked = preference.visible;
+            check.addEventListener('change', () => { preference.visible = check.checked; this.draw(); this.onChange(); });
             const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = colors[i];
-            label.append(check, dot, document.createTextNode(series.name));
+            row.title = series.reference == null ? 'Автоматична нормалізація: max|y|' : `Опорна нормалізація: ${series.reference} ${series.unit}`;
+            label.append(check, dot, document.createTextNode(`${series.name} · ${series.unit}`));
             const scale = document.createElement('input');
-            Object.assign(scale, {type: 'number', min: '0.1', max: '10', step: '0.1', value: settings.scales[i]});
+            Object.assign(scale, {type: 'number', min: '0.1', max: '10', step: '0.1', value: preference.scale});
             scale.setAttribute('aria-label', `Масштаб: ${series.name}`);
             scale.addEventListener('change', () => {
-                if (!scale.checkValidity() || !Number.isFinite(scale.valueAsNumber)) { scale.value = settings.scales[i]; return; }
-                settings.scales[i] = scale.valueAsNumber; this.draw(); this.onChange();
+                if (!scale.checkValidity() || !Number.isFinite(scale.valueAsNumber)) { scale.value = preference.scale; return; }
+                preference.scale = scale.valueAsNumber; this.draw(); this.onChange();
             });
             row.append(label, document.createTextNode('×'), scale); this.legend.append(row);
         });
@@ -55,10 +75,11 @@ export class TimeSeriesChart {
         c.fillStyle = '#131b26'; c.fillRect(0, 0, w, h);
         const left = 54, top = 22, pw = Math.max(1, w - 76), ph = Math.max(1, h - 66);
         c.font = '11px Consolas, monospace';
-        for (let i = 0; i <= 4; i++) {
-            const y = top + i * ph / 4;
+        const ticks = ph < 80 ? 2 : 4;
+        for (let i = 0; i <= ticks; i++) {
+            const y = top + i * ph / ticks;
             c.strokeStyle = '#283446'; c.beginPath(); c.moveTo(left, y); c.lineTo(left + pw, y); c.stroke();
-            c.fillStyle = '#91a0b3'; c.textAlign = 'right'; c.fillText((1 - i / 2).toFixed(1), left - 10, y + 4);
+            c.fillStyle = '#91a0b3'; c.textAlign = 'right'; c.fillText(((1 - 2 * i / ticks) * verticalLimit).toFixed(2), left - 10, y + 4);
         }
         if (!data) {
             c.fillStyle = '#91a0b3'; c.textAlign = 'center';
@@ -76,12 +97,12 @@ export class TimeSeriesChart {
         }
         c.fillText('Час, с', left + pw / 2, h - 7);
         c.save(); c.beginPath(); c.rect(left, top, pw, ph); c.clip();
-        const maxima = data.series.map(s => s.values.reduce((max, n) => Math.max(max, Math.abs(n)), 0) || 1);
         data.series.forEach((s, j) => {
-            if (!settings.visible[j]) return;
+            const preference = seriesPreference(settings, s, j);
+            if (!preference.visible) return;
             c.strokeStyle = colors[j]; c.lineWidth = 1.5; c.beginPath();
             s.values.forEach((value, i) => {
-                const y = top + ph / 2 * (1 - value / maxima[j] * settings.scales[j]);
+                const y = top + ph / 2 * (1 - Math.max(-1e9, Math.min(1e9, value / this.divisors[j] * preference.scale)) / verticalLimit);
                 if (i === 0) c.moveTo(xAt(i), y); else c.lineTo(xAt(i), y);
             }); c.stroke();
         });
@@ -92,10 +113,11 @@ export class TimeSeriesChart {
         c.restore();
         this.cursor.replaceChildren();
         const intro = document.createElement('span');
-        intro.textContent = this.index === null ? 'Кожна крива: y / max|y| · масштаб. Значення курсора — вихідні.' : `t = ${times[this.index].toFixed(3)} с`;
+        intro.textContent = this.index === null ? 'Кожна крива: y / опора · масштаб; опора — задана або max|y|. Значення курсора — вихідні.' : `t = ${times[this.index].toFixed(3)} с`;
         this.cursor.append(intro);
         if (this.index !== null) data.series.forEach((s, j) => {
-            if (!settings.visible[j]) return;
+            const preference = seriesPreference(settings, s, j);
+            if (!preference.visible) return;
             const value = document.createElement('span'); value.style.color = colors[j];
             value.textContent = `${s.name}: ${s.values[this.index].toPrecision(5)} ${s.unit}`; this.cursor.append(value);
         });

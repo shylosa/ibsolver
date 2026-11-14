@@ -29,13 +29,49 @@ func (v Inputs) Validate() error {
 	return nil
 }
 
+type Mode string
+
+const (
+	ModeDemo       Mode = "demo"
+	ModeOscillator Mode = "oscillator"
+)
+
+// Parameters retains each mode's values when switching the active mode.
+// A nil pointer means absent; zero remains an actual numeric value.
+type Parameters struct {
+	Demo       *Inputs           `json:"demo,omitempty"`
+	Oscillator *NumericalExample `json:"oscillator,omitempty"`
+}
+
+func DefaultParameters() Parameters {
+	d, n := DefaultInputs(), DefaultNumerical()
+	return Parameters{Demo: &d, Oscillator: &n}
+}
+
+func (p Parameters) Validate(mode Mode) error {
+	switch mode {
+	case ModeDemo:
+		if p.Demo != nil {
+			return p.Demo.Validate()
+		}
+	case ModeOscillator:
+		if p.Oscillator != nil {
+			return p.Oscillator.Validate()
+		}
+	default:
+		return fmt.Errorf("Невідомий режим конфігурації")
+	}
+	return fmt.Errorf("Відсутні параметри активного режиму")
+}
+
 type Configuration struct {
-	ID        int64             `json:"id"`
-	Name      string            `json:"name"`
-	Inputs    Inputs            `json:"inputs"`
-	Numerical *NumericalExample `json:"numerical,omitempty"`
-	CreatedAt string            `json:"createdAt"`
-	UpdatedAt string            `json:"updatedAt"`
+	ID          int64      `json:"id"`
+	Name        string     `json:"name"`
+	Mode        Mode       `json:"mode"`
+	Parameters  Parameters `json:"parameters"`
+	CreatedAt   string     `json:"createdAt"`
+	UpdatedAt   string     `json:"updatedAt"`
+	LatestRunID *int64     `json:"latestRunId,omitempty"`
 }
 
 func (c Configuration) Validate() error {
@@ -45,19 +81,15 @@ func (c Configuration) Validate() error {
 	if c.ID < 0 {
 		return fmt.Errorf("Невірний ідентифікатор конфігурації")
 	}
-	if err := c.Inputs.Validate(); err != nil {
-		return err
-	}
-	if c.Numerical != nil {
-		return c.Numerical.Validate()
-	}
-	return nil
+	return c.Parameters.Validate(c.Mode)
 }
 
 type Series struct {
-	Name   string    `json:"name"`
-	Unit   string    `json:"unit"`
-	Values []float64 `json:"values"`
+	ID        string    `json:"id"`
+	Reference *float64  `json:"reference,omitempty"`
+	Name      string    `json:"name"`
+	Unit      string    `json:"unit"`
+	Values    []float64 `json:"values"`
 }
 
 type ChartData struct {
@@ -74,7 +106,15 @@ func (d ChartData) Validate() error {
 			return fmt.Errorf("Невірна часова вісь")
 		}
 	}
+	ids := make(map[string]bool)
 	for _, s := range d.Series {
+		if s.ID == "" || ids[s.ID] {
+			return fmt.Errorf("Невірний ідентифікатор серії")
+		}
+		ids[s.ID] = true
+		if s.Reference != nil && (math.IsNaN(*s.Reference) || math.IsInf(*s.Reference, 0) || *s.Reference <= 0) {
+			return fmt.Errorf("Опорне значення серії має бути скінченним і додатним")
+		}
 		if s.Name == "" || len(s.Values) != len(d.Time) {
 			return fmt.Errorf("Невірна серія")
 		}
@@ -95,46 +135,46 @@ type Summary struct {
 }
 
 type Run struct {
-	ID                int64             `json:"id"`
-	ConfigurationID   int64             `json:"configurationId"`
-	Snapshot          Inputs            `json:"snapshot"`
-	NumericalSnapshot *NumericalExample `json:"numericalSnapshot,omitempty"`
-	ResultVersion     string            `json:"resultVersion"`
-	Summary           Summary           `json:"summary"`
-	Chart             ChartData         `json:"chart"`
-	CreatedAt         string            `json:"createdAt"`
+	ID              int64      `json:"id"`
+	ConfigurationID int64      `json:"configurationId"`
+	Mode            Mode       `json:"mode"`
+	Snapshot        Parameters `json:"snapshot"`
+	ResultVersion   string     `json:"resultVersion"`
+	Summary         Summary    `json:"summary"`
+	Chart           ChartData  `json:"chart"`
+	CreatedAt       string     `json:"createdAt"`
 }
 
 func (r Run) Validate() error {
-	if r.ResultVersion == NumericalVersion {
+	if r.ResultVersion == NumericalVersion && r.Mode == ModeOscillator {
 		return r.validateNumerical()
 	}
-	if r.ResultVersion != ResultVersion || r.Summary.Kind != "DEMO" {
+	if r.ResultVersion != ResultVersion || r.Mode != ModeDemo || r.Summary.Kind != "DEMO" {
 		return fmt.Errorf("Несумісна версія результатів")
 	}
-	if err := r.Snapshot.Validate(); err != nil {
+	if err := r.Snapshot.Validate(r.Mode); err != nil {
 		return err
 	}
 	if err := r.Chart.Validate(); err != nil {
 		return err
 	}
-	if r.Summary.Samples != len(r.Chart.Time) || r.Summary.Samples != r.Snapshot.Samples || r.Summary.Duration != r.Snapshot.Duration {
+	if r.Summary.Samples != len(r.Chart.Time) || r.Summary.Samples != r.Snapshot.Demo.Samples || r.Summary.Duration != r.Snapshot.Demo.Duration {
 		return fmt.Errorf("Неповні результати")
 	}
 	return nil
 }
 
 func (r Run) validateNumerical() error {
-	if r.Summary.Kind != "NUMERICAL" || r.NumericalSnapshot == nil || r.Summary.Numerical == nil {
+	if r.Summary.Kind != "NUMERICAL" || r.Snapshot.Oscillator == nil || r.Summary.Numerical == nil {
 		return fmt.Errorf("Неповний чисельний результат")
 	}
-	if err := r.NumericalSnapshot.Validate(); err != nil {
+	if err := r.Snapshot.Validate(r.Mode); err != nil {
 		return err
 	}
 	if err := r.Chart.Validate(); err != nil {
 		return err
 	}
-	p, s := r.NumericalSnapshot.Model, r.Summary.Numerical
+	p, s := r.Snapshot.Oscillator.Model, r.Summary.Numerical
 	if r.Summary.Samples != p.Samples || len(r.Chart.Time) != p.Samples || r.Summary.Duration != p.Duration || r.Chart.Time[0] != 0 || r.Chart.Time[len(r.Chart.Time)-1] != p.Duration || len(r.Chart.Series) != 6 {
 		return fmt.Errorf("Неповні чисельні ряди")
 	}
@@ -144,17 +184,23 @@ func (r Run) validateNumerical() error {
 		}
 	}
 	stats := s.Statistics
-	if stats.Accepted < p.Samples-1 || stats.Rejected < 0 || stats.Accepted > r.NumericalSnapshot.Solver.MaxSteps || stats.Rejected > r.NumericalSnapshot.Solver.MaxSteps-stats.Accepted || stats.Evaluations != 7*(stats.Accepted+stats.Rejected) {
+	if stats.Accepted < p.Samples-1 || stats.Rejected < 0 || stats.Accepted > r.Snapshot.Oscillator.Solver.MaxSteps || stats.Rejected > r.Snapshot.Oscillator.Solver.MaxSteps-stats.Accepted || stats.Evaluations != 7*(stats.Accepted+stats.Rejected) {
 		return fmt.Errorf("Некоректна статистика інтегратора")
 	}
 	return nil
 }
 
+type SeriesSettings struct {
+	Visible bool    `json:"visible"`
+	Scale   float64 `json:"scale"`
+}
+
 type Settings struct {
-	ActiveConfigurationID int64      `json:"activeConfigurationId"`
-	ResultsWidth          int        `json:"resultsWidth"`
-	Visible               [6]bool    `json:"visible"`
-	Scales                [6]float64 `json:"scales"`
+	Series                map[string]SeriesSettings `json:"series,omitempty"`
+	ActiveConfigurationID int64                     `json:"activeConfigurationId"`
+	ResultsWidth          int                       `json:"resultsWidth"`
+	Visible               [6]bool                   `json:"visible"`
+	Scales                [6]float64                `json:"scales"`
 }
 
 func DefaultSettings() Settings {
@@ -165,7 +211,14 @@ func (s Settings) Validate() error {
 	if s.ResultsWidth < 180 || s.ResultsWidth > 480 {
 		return fmt.Errorf("Невірна ширина панелі")
 	}
-	for _, v := range s.Scales {
+	scales := append([]float64(nil), s.Scales[:]...)
+	for id, pref := range s.Series {
+		if id == "" {
+			return fmt.Errorf("Відсутній ідентифікатор налаштувань серії")
+		}
+		scales = append(scales, pref.Scale)
+	}
+	for _, v := range scales {
 		if math.IsNaN(v) || math.IsInf(v, 0) || v < 0.1 || v > 10 {
 			return fmt.Errorf("Масштаб має бути від 0,1 до 10")
 		}

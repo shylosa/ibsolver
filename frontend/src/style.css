@@ -62,3 +62,6 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding: 7px 
 @media (max-width: 1050px) { .brand small { display: none; } header { gap: 12px; } .parameters { padding-inline: 12px; } form, .configuration-row { gap: 8px; } button { padding-inline: 9px; } .name-field { width: 180px; } .stage { font-size: 11px; } }
 @media (max-height: 650px) { header { min-height: 45px; padding-block: 6px; } .parameters { padding-block: 7px; } .configuration-row { margin-bottom: 6px; } .parameters .hint { display: none; } #cursor { max-height: 80px; overflow-y: auto; flex-shrink: 0; } }
 @media (max-width: 1050px) { .numerical-fields { gap: 6px; } .solver-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+[hidden] { display: none !important; }
+@media (max-width: 1050px) { .configuration-row { flex-wrap: wrap; } #save-state { padding-bottom: 4px; } }

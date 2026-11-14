@@ -24,8 +24,7 @@ func (s *Service) load() (domain.State, error) {
 		return state, err
 	}
 	if len(state.Configurations) == 0 {
-		n := domain.DefaultNumerical()
-		_, err = s.store.SaveConfiguration(domain.Configuration{Name: "Нова конфігурація", Inputs: domain.DefaultInputs(), Numerical: &n}, state.Settings)
+		_, err = s.store.SaveConfiguration(domain.Configuration{Name: "Нова конфігурація", Mode: domain.ModeOscillator, Parameters: domain.DefaultParameters()}, state.Settings)
 		if err != nil {
 			return state, err
 		}
@@ -45,7 +44,7 @@ func (s *Service) Calculate(ctx context.Context, configurationID int64) (domain.
 		s.mu.Unlock()
 		return state, err
 	}
-	if state.Active.ID != configurationID || state.Active.Numerical == nil {
+	if state.Active.ID != configurationID || state.Active.Mode != domain.ModeOscillator || state.Active.Parameters.Oscillator == nil {
 		s.mu.Unlock()
 		return state, fmt.Errorf("Активна конфігурація змінилася")
 	}
@@ -55,7 +54,7 @@ func (s *Service) Calculate(ctx context.Context, configurationID int64) (domain.
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
-	input := *state.Active.Numerical
+	input := *state.Active.Parameters.Oscillator
 	s.mu.Unlock()
 	defer func() { cancel(); s.mu.Lock(); s.cancel = nil; s.mu.Unlock() }()
 	run, err := chartdata.Oscillator(ctx, input)
@@ -120,10 +119,10 @@ func (s *Service) CreateDemo(configurationID int64) (domain.State, error) {
 	if err != nil {
 		return state, err
 	}
-	if state.Active.ID != configurationID {
+	if state.Active.ID != configurationID || state.Active.Mode != domain.ModeDemo || state.Active.Parameters.Demo == nil {
 		return state, fmt.Errorf("Активна конфігурація змінилася")
 	}
-	run, err := chartdata.Demo(state.Active.Inputs)
+	run, err := chartdata.Demo(*state.Active.Parameters.Demo)
 	if err != nil {
 		return state, err
 	}

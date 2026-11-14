@@ -15,14 +15,14 @@ func TestV1MigrationPreservesDemoAndAddsNumericalPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := domain.Configuration{Name: "Stage 1", Inputs: domain.DefaultInputs()}
+	c := domain.Configuration{Name: "Stage 1", Mode: domain.ModeDemo, Parameters: domain.DefaultParameters()}
 	settings := domain.DefaultSettings()
 	settings.Scales[1] = 2
 	c.ID, err = s.SaveConfiguration(c, settings)
 	if err != nil {
 		t.Fatal(err)
 	}
-	run, err := chartdata.Demo(c.Inputs)
+	run, err := chartdata.Demo(*c.Parameters.Demo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,12 +47,13 @@ PRAGMA user_version=1;`); err != nil {
 	}
 	defer func() { s.Close() }()
 	after, err := s.Load()
-	if err != nil || after.Warning != "" || after.Stale || after.Active.Inputs != c.Inputs || after.Settings != before.Settings || !reflect.DeepEqual(after.Run, before.Run) || after.Active.Numerical == nil {
+	if err != nil || after.Warning != "" || after.Stale || *after.Active.Parameters.Demo != *c.Parameters.Demo || !reflect.DeepEqual(after.Settings, before.Settings) || !reflect.DeepEqual(after.Run, before.Run) || after.Active.Parameters.Oscillator == nil {
 		t.Fatalf("v1 migration lost data: %+v %v", after, err)
 	}
 	n := domain.DefaultNumerical()
 	n.Solver.AbsTolerance = 2e-10
-	c.Numerical = &n
+	c.Parameters.Oscillator = &n
+	c.Mode = domain.ModeOscillator
 	if _, err = s.SaveConfiguration(c, after.Settings); err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +75,7 @@ PRAGMA user_version=1;`); err != nil {
 		t.Fatal(err)
 	}
 	after, err = s.Load()
-	if err != nil || after.Warning != "" || after.Stale || *after.Active.Numerical != n || !reflect.DeepEqual(after.Run, previous.Run) {
+	if err != nil || after.Warning != "" || after.Stale || *after.Active.Parameters.Oscillator != n || !reflect.DeepEqual(after.Run, previous.Run) {
 		t.Fatalf("numerical restart lost data: %v", err)
 	}
 	var demoCount int
@@ -101,12 +102,12 @@ func TestRestartRestoresInputsSeriesAndSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	settings := domain.DefaultSettings()
-	c := domain.Configuration{Name: "Тест ' SQL", Inputs: domain.DefaultInputs()}
+	c := domain.Configuration{Name: "Тест ' SQL", Mode: domain.ModeDemo, Parameters: domain.DefaultParameters()}
 	c.ID, err = s.SaveConfiguration(c, settings)
 	if err != nil {
 		t.Fatal(err)
 	}
-	run, err := chartdata.Demo(c.Inputs)
+	run, err := chartdata.Demo(*c.Parameters.Demo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,15 +115,16 @@ func TestRestartRestoresInputsSeriesAndSettings(t *testing.T) {
 	if err = s.SaveRun(run); err != nil {
 		t.Fatal(err)
 	}
-	c.Inputs.Amplitude = 7
+	c.Parameters.Demo.Amplitude = 7
 	settings.ActiveConfigurationID = c.ID
 	settings.Visible[2] = false
 	settings.Scales[4] = 2.5
 	settings.ResultsWidth = 310
+	settings.BindSeries(run.Chart.Series)
 	if _, err = s.SaveConfiguration(c, settings); err != nil {
 		t.Fatal(err)
 	}
-	other := domain.Configuration{Name: "Інша конфігурація", Inputs: domain.DefaultInputs()}
+	other := domain.Configuration{Name: "Інша конфігурація", Mode: domain.ModeDemo, Parameters: domain.DefaultParameters()}
 	if _, err = s.SaveConfiguration(other, settings); err != nil {
 		t.Fatal(err)
 	}
@@ -141,10 +143,10 @@ func TestRestartRestoresInputsSeriesAndSettings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if state.Warning != "" || len(state.Configurations) != 2 || state.Active.ID != c.ID || state.Active.Inputs != c.Inputs || !state.Stale || state.Settings != settings {
+	if state.Warning != "" || len(state.Configurations) != 2 || state.Active.ID != c.ID || *state.Active.Parameters.Demo != *c.Parameters.Demo || !state.Stale || !reflect.DeepEqual(state.Settings, settings) {
 		t.Fatalf("incorrect restored state: %+v", state)
 	}
-	if state.Run == nil || state.Run.Snapshot != run.Snapshot || !reflect.DeepEqual(state.Run.Chart, run.Chart) {
+	if state.Run == nil || !reflect.DeepEqual(state.Run.Snapshot, run.Snapshot) || !reflect.DeepEqual(state.Run.Chart, run.Chart) {
 		t.Fatal("stored numeric data or immutable snapshot changed")
 	}
 	var version int
@@ -171,7 +173,7 @@ func TestCorruptAndIncompatibleResultsKeepInputs(t *testing.T) {
 			}
 			defer s.Close()
 			inputs := domain.DefaultInputs()
-			id, err := s.SaveConfiguration(domain.Configuration{Name: "Тест", Inputs: inputs}, domain.DefaultSettings())
+			id, err := s.SaveConfiguration(domain.Configuration{Name: "Тест", Mode: domain.ModeDemo, Parameters: domain.Parameters{Demo: &inputs}}, domain.DefaultSettings())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -184,7 +186,7 @@ func TestCorruptAndIncompatibleResultsKeepInputs(t *testing.T) {
 				t.Fatal(err)
 			}
 			state, err := s.Load()
-			if err != nil || state.Run != nil || state.Warning == "" || state.Active.Inputs != inputs {
+			if err != nil || state.Run != nil || state.Warning == "" || *state.Active.Parameters.Demo != inputs {
 				t.Fatalf("state=%+v err=%v", state, err)
 			}
 		})
@@ -197,7 +199,7 @@ func TestFailedRunSaveIsAtomic(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	id, err := s.SaveConfiguration(domain.Configuration{Name: "Тест", Inputs: domain.DefaultInputs()}, domain.DefaultSettings())
+	id, err := s.SaveConfiguration(domain.Configuration{Name: "Тест", Mode: domain.ModeDemo, Parameters: domain.DefaultParameters()}, domain.DefaultSettings())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -57,8 +57,11 @@ type NumericalSummary struct {
 }
 
 func (r Run) Matches(c Configuration) bool {
-	if r.ResultVersion == ResultVersion {
-		return r.Snapshot == c.Inputs
+	if r.Mode != c.Mode {
+		return false
 	}
-	return r.NumericalSnapshot != nil && c.Numerical != nil && *r.NumericalSnapshot == *c.Numerical
+	if r.Mode == ModeDemo {
+		return r.Snapshot.Demo != nil && c.Parameters.Demo != nil && *r.Snapshot.Demo == *c.Parameters.Demo
+	}
+	return r.Snapshot.Oscillator != nil && c.Parameters.Oscillator != nil && *r.Snapshot.Oscillator == *c.Parameters.Oscillator
 }
