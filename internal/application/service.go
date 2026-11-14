@@ -24,7 +24,7 @@ func (s *Service) load() (domain.State, error) {
 		return state, err
 	}
 	if len(state.Configurations) == 0 {
-		_, err = s.store.SaveConfiguration(domain.Configuration{Name: "Нова конфігурація", Mode: domain.ModeOscillator, Parameters: domain.DefaultParameters()}, state.Settings)
+		_, err = s.store.SaveConfiguration(domain.Configuration{Name: "Нова конфігурація", Mode: domain.ModePreparation, Parameters: domain.NewPreparationParameters()}, state.Settings)
 		if err != nil {
 			return state, err
 		}
@@ -43,6 +43,10 @@ func (s *Service) Calculate(ctx context.Context, configurationID int64) (domain.
 	if err != nil {
 		s.mu.Unlock()
 		return state, err
+	}
+	if state.Active.Mode == domain.ModePreparation {
+		s.mu.Unlock()
+		return state, fmt.Errorf("Розрахунковий модуль для підготовчих даних ще не реалізовано")
 	}
 	if state.Active.ID != configurationID || state.Active.Mode != domain.ModeOscillator || state.Active.Parameters.Oscillator == nil {
 		s.mu.Unlock()
@@ -119,6 +123,9 @@ func (s *Service) CreateDemo(configurationID int64) (domain.State, error) {
 	state, err := s.load()
 	if err != nil {
 		return state, err
+	}
+	if state.Active.Mode == domain.ModePreparation {
+		return state, fmt.Errorf("Розрахунковий модуль для підготовчих даних ще не реалізовано")
 	}
 	if state.Active.ID != configurationID || state.Active.Mode != domain.ModeDemo || state.Active.Parameters.Demo == nil {
 		return state, fmt.Errorf("Активна конфігурація змінилася")

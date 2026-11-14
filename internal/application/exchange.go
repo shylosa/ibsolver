@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"ibsolver/internal/domain"
@@ -32,7 +34,12 @@ func validateExchange(c domain.Configuration) error {
 		}
 	}
 	if c.Parameters.Oscillator != nil {
-		return c.Parameters.Oscillator.Validate()
+		if err := c.Parameters.Oscillator.Validate(); err != nil {
+			return err
+		}
+	}
+	if c.Parameters.Preparation != nil {
+		return c.Parameters.Preparation.Validate()
 	}
 	return nil
 }
@@ -51,7 +58,11 @@ func (s *Service) ExportConfiguration(id int64) ([]byte, error) {
 	if err := validateExchange(c); err != nil {
 		return nil, err
 	}
-	return json.MarshalIndent(configurationFile{"ibsolver-configuration", 1, c.Name, c.Mode, c.Parameters}, "", "  ")
+	version := 1
+	if c.Parameters.Preparation != nil {
+		version = 2
+	}
+	return json.MarshalIndent(configurationFile{"ibsolver-configuration", version, c.Name, c.Mode, c.Parameters}, "", "  ")
 }
 
 func (s *Service) ImportConfiguration(data []byte) (domain.State, error) {
@@ -70,7 +81,7 @@ func (s *Service) ImportConfiguration(data []byte) (domain.State, error) {
 	if err := decoder.Decode(new(any)); err != io.EOF {
 		return domain.State{}, fmt.Errorf("Очікується один JSON-об’єкт")
 	}
-	if f.Format != "ibsolver-configuration" || f.Version != 1 {
+	if f.Format != "ibsolver-configuration" || (f.Version != 1 && f.Version != 2) || (f.Version == 1 && f.Parameters.Preparation != nil) {
 		return domain.State{}, fmt.Errorf("Непідтримуваний формат або версія конфігурації")
 	}
 	// Require complete typed objects; JSON null must not silently become numeric zero.
@@ -109,7 +120,25 @@ func completeConfigurationJSON(data []byte) error {
 	}
 	for mode, raw := range parameters {
 		var template []byte
-		if mode == "demo" {
+		if mode == "preparation" {
+			var fields map[string]json.RawMessage
+			if err := json.Unmarshal(raw, &fields); err != nil {
+				return err
+			}
+			for _, key := range []string{"d", "q", "vd", "lc", "ns", "f1", "af"} {
+				if len(fields[key]) == 0 {
+					return fmt.Errorf("Відсутній параметр: %s", key)
+				}
+				text := strings.TrimSpace(string(fields[key]))
+				if text != "null" {
+					n, err := strconv.ParseFloat(text, 64)
+					if err != nil || decimalUnderflow(text, n) {
+						return fmt.Errorf("Число поза діапазоном binary64: %s", key)
+					}
+				}
+			}
+			continue
+		} else if mode == "demo" {
 			template, _ = json.Marshal(domain.DefaultInputs())
 		} else {
 			template, _ = json.Marshal(domain.DefaultNumerical())
@@ -179,4 +208,57 @@ func (s *Service) ExportCSV(id int64) ([]byte, error) {
 	}
 	writer.Flush()
 	return output.Bytes(), writer.Error()
+}
+
+// ReadSeriesCSV opens neutral numeric data independently of configurations/runs.
+// The first column is time in seconds, followed by up to six named series.
+func ReadSeriesCSV(data []byte) (domain.ChartData, error) {
+	var chart domain.ChartData
+	if len(data) > 8<<20 || !utf8.Valid(data) {
+		return chart, fmt.Errorf("CSV має бути UTF-8 розміром до 8 МіБ")
+	}
+	reader := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(data), "\ufeff")))
+	header, err := reader.Read()
+	if err != nil || len(header) < 2 || len(header) > 7 || (header[0] != "Час [с]" && header[0] != "time [s]") {
+		return chart, fmt.Errorf("CSV: перший стовпець «time [s]» або «Час [с]», далі 1–6 рядів «Назва [одиниця]»; роздільник — кома")
+	}
+	for i, label := range header[1:] {
+		end := strings.LastIndex(label, " [")
+		if end < 1 || !strings.HasSuffix(label, "]") {
+			return chart, fmt.Errorf("CSV: вкажіть назву та одиницю кожного ряду")
+		}
+		chart.Series = append(chart.Series, domain.Series{ID: fmt.Sprintf("csv-%d", i), Name: label[:end], Unit: label[end+2 : len(label)-1]})
+	}
+	for rowIndex := 2; ; rowIndex++ {
+		row, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return chart, fmt.Errorf("CSV, рядок %d: %w", rowIndex, err)
+		}
+		if len(chart.Time) >= 20000 {
+			return chart, fmt.Errorf("CSV: не більше 20000 точок")
+		}
+		for column, text := range row {
+			n, err := strconv.ParseFloat(strings.TrimSpace(text), 64)
+			if err != nil || math.IsNaN(n) || math.IsInf(n, 0) || decimalUnderflow(text, n) {
+				return chart, fmt.Errorf("CSV: некоректне число, рядок %d, стовпець %d", rowIndex, column+1)
+			}
+			if column == 0 {
+				chart.Time = append(chart.Time, n)
+			} else {
+				chart.Series[column-1].Values = append(chart.Series[column-1].Values, n)
+			}
+		}
+	}
+	return chart, chart.Validate()
+}
+
+func decimalUnderflow(text string, value float64) bool {
+	if value != 0 {
+		return false
+	}
+	mantissa := strings.FieldsFunc(text, func(r rune) bool { return r == 'e' || r == 'E' })
+	return len(mantissa) > 0 && strings.ContainsAny(mantissa[0], "123456789")
 }

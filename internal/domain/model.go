@@ -32,15 +32,17 @@ func (v Inputs) Validate() error {
 type Mode string
 
 const (
-	ModeDemo       Mode = "demo"
-	ModeOscillator Mode = "oscillator"
+	ModePreparation Mode = "preparation"
+	ModeDemo        Mode = "demo"
+	ModeOscillator  Mode = "oscillator"
 )
 
 // Parameters retains each mode's values when switching the active mode.
 // A nil pointer means absent; zero remains an actual numeric value.
 type Parameters struct {
-	Demo       *Inputs           `json:"demo,omitempty"`
-	Oscillator *NumericalExample `json:"oscillator,omitempty"`
+	Preparation *PreparationInputs `json:"preparation,omitempty"`
+	Demo        *Inputs            `json:"demo,omitempty"`
+	Oscillator  *NumericalExample  `json:"oscillator,omitempty"`
 }
 
 func DefaultParameters() Parameters {
@@ -50,6 +52,10 @@ func DefaultParameters() Parameters {
 
 func (p Parameters) Validate(mode Mode) error {
 	switch mode {
+	case ModePreparation:
+		if p.Preparation != nil {
+			return p.Preparation.Validate()
+		}
 	case ModeDemo:
 		if p.Demo != nil {
 			return p.Demo.Validate()

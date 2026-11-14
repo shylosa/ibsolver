@@ -109,3 +109,24 @@ func writeExchange(path string, data []byte) error {
 	}
 	return os.Rename(file.Name(), path)
 }
+
+func (a *App) OpenSeriesCSV() (*domain.ChartData, error) {
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: "Відкрити незалежні часові ряди", Filters: []runtime.FileFilter{{DisplayName: "Часові ряди CSV", Pattern: "*.csv"}}})
+	if err != nil || path == "" {
+		return nil, err
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, (8<<20)+1))
+	if err != nil {
+		return nil, err
+	}
+	chart, err := application.ReadSeriesCSV(data)
+	if err != nil {
+		return nil, err
+	}
+	return &chart, nil
+}

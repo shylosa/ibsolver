@@ -110,6 +110,10 @@ export class TimeSeriesChart {
         if (canvas.height !== Math.round(h * ratio)) canvas.height = Math.round(h * ratio);
         c.setTransform(ratio, 0, 0, ratio, 0, 0);
         c.fillStyle = '#131b26'; c.fillRect(0, 0, w, h);
+        if (!data) {
+            this.cursor.textContent = '';
+            return;
+        }
         const left = 54, top = 22, pw = Math.max(1, w - 76), ph = Math.max(1, h - 66);
         c.font = '11px Consolas, monospace';
         const ticks = ph < 80 ? 2 : 4;
@@ -117,12 +121,6 @@ export class TimeSeriesChart {
             const y = top + i * ph / ticks;
             c.strokeStyle = '#283446'; c.beginPath(); c.moveTo(left, y); c.lineTo(left + pw, y); c.stroke();
             c.fillStyle = '#91a0b3'; c.textAlign = 'right'; c.fillText(((1 - 2 * i / ticks) * verticalLimit).toFixed(2), left - 10, y + 4);
-        }
-        if (!data) {
-            c.fillStyle = '#91a0b3'; c.textAlign = 'center';
-            c.fillText('Натисніть «Розрахувати», щоб отримати часові ряди.', w / 2, h / 2);
-            this.cursor.textContent = 'Наведіть курсор на графік, щоб переглянути значення.';
-            return;
         }
         const times = data.time;
         const [min, max] = this.range;

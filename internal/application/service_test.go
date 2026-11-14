@@ -21,6 +21,11 @@ func TestLoadNeverGeneratesDemo(t *testing.T) {
 	}
 	service := New(store)
 	state, err := service.Load()
+	if err == nil {
+		c := state.Active
+		c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
+		state, err = service.SaveConfiguration(c, state.Settings)
+	}
 	if err != nil || state.Run != nil || len(state.Configurations) != 1 {
 		t.Fatalf("initial state=%+v err=%v", state, err)
 	}
@@ -69,6 +74,11 @@ func TestNumericalCalculationRestartAndFailurePreservesResult(t *testing.T) {
 	}
 	service := New(store)
 	state, err := service.Load()
+	if err == nil {
+		c := state.Active
+		c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
+		state, err = service.SaveConfiguration(c, state.Settings)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,6 +146,11 @@ func TestCancelActiveCalculationDoesNotBlockLoad(t *testing.T) {
 	defer store.Close()
 	service := New(store)
 	state, err := service.Load()
+	if err == nil {
+		c := state.Active
+		c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
+		state, err = service.SaveConfiguration(c, state.Settings)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,6 +202,11 @@ func TestModeSwitchPreservesParametersAndRun(t *testing.T) {
 	defer store.Close()
 	service := New(store)
 	state, err := service.Load()
+	if err == nil {
+		c := state.Active
+		c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
+		state, err = service.SaveConfiguration(c, state.Settings)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

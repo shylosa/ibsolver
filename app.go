@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"ibsolver/internal/application"
 	"ibsolver/internal/domain"
@@ -11,11 +14,12 @@ import (
 
 // App struct
 type App struct {
-	service    *application.Service
-	store      *sqlite.Store
-	startupErr error
-	initDone   chan struct{}
-	ctx        context.Context
+	closeAllowed atomic.Bool
+	service      *application.Service
+	store        *sqlite.Store
+	startupErr   error
+	initDone     chan struct{}
+	ctx          context.Context
 }
 
 // NewApp creates a new App application struct
@@ -95,4 +99,18 @@ func (a *App) CreateDemo(configurationID int64) (domain.State, error) {
 		return domain.State{}, err
 	}
 	return a.service.CreateDemo(configurationID)
+}
+
+// beforeClose keeps the window alive until the frontend resolves its draft.
+func (a *App) beforeClose(ctx context.Context) bool {
+	if a.closeAllowed.Load() {
+		return false
+	}
+	runtime.EventsEmit(ctx, "close-request")
+	return true
+}
+
+func (a *App) CloseWindow() {
+	a.closeAllowed.Store(true)
+	runtime.Quit(a.ctx)
 }

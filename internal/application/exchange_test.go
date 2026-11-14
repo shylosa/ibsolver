@@ -22,6 +22,11 @@ func TestConfigurationExchangeAndFailedImportsPreserveState(t *testing.T) {
 	}
 	service := New(store)
 	state, err := service.Load()
+	if err == nil {
+		c := state.Active
+		c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
+		state, err = service.SaveConfiguration(c, state.Settings)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,6 +96,11 @@ func TestCSVPreservesSavedValuesHeadersAndOrder(t *testing.T) {
 	defer store.Close()
 	service := New(store)
 	state, err := service.Load()
+	if err == nil {
+		c := state.Active
+		c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
+		state, err = service.SaveConfiguration(c, state.Settings)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
