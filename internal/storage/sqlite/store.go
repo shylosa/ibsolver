@@ -233,7 +233,7 @@ func (s *Store) Load() (domain.State, error) {
 			rows.Close()
 			return state, err
 		}
-		record, decodeErr := decodeParameters(inputs, numerical, version)
+		record, decodeErr := decodeParameters(inputs, numerical, "")
 		c.Mode, c.Parameters = record.Mode, record.Parameters
 		if decodeErr != nil || c.Validate() != nil {
 			state.Warning += " Пошкоджену або несумісну конфігурацію пропущено."

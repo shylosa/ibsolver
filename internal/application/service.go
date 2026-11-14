@@ -74,6 +74,7 @@ func (s *Service) Calculate(ctx context.Context, configurationID int64) (domain.
 		return current, fmt.Errorf("Розрахунок скасовано: %w", err)
 	}
 	run.ConfigurationID = configurationID
+	run.Summary.ConfigurationName = state.Active.Name
 	if err = s.store.SaveRun(run); err != nil {
 		return current, err
 	}
@@ -127,6 +128,7 @@ func (s *Service) CreateDemo(configurationID int64) (domain.State, error) {
 		return state, err
 	}
 	run.ConfigurationID = configurationID
+	run.Summary.ConfigurationName = state.Active.Name
 	if err = s.store.SaveRun(run); err != nil {
 		return state, err
 	}

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "test": "node --test src/chart.test.mjs",
+    "test": "node --test src/*.test.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

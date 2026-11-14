@@ -128,10 +128,11 @@ func (d ChartData) Validate() error {
 }
 
 type Summary struct {
-	Kind      string            `json:"kind"`
-	Samples   int               `json:"samples"`
-	Duration  float64           `json:"duration"`
-	Numerical *NumericalSummary `json:"numerical,omitempty"`
+	ConfigurationName string            `json:"configurationName,omitempty"`
+	Kind              string            `json:"kind"`
+	Samples           int               `json:"samples"`
+	Duration          float64           `json:"duration"`
+	Numerical         *NumericalSummary `json:"numerical,omitempty"`
 }
 
 type Run struct {

@@ -39,7 +39,9 @@ func decodeParameters(raw, numerical, resultVersion string) (parameterRecord, er
 		return parameterRecord{}, err
 	}
 	mode := domain.ModeDemo
-	if resultVersion == domain.NumericalVersion || (resultVersion != domain.ResultVersion && n != nil) {
+	// Configuration mode is inferred from valid numerical parameters, never a run.
+	// Snapshots supply resultVersion because their historical mode is known.
+	if resultVersion == domain.NumericalVersion || (resultVersion == "" && n != nil && n.Validate() == nil) {
 		mode = domain.ModeOscillator
 	}
 	p := domain.Parameters{Demo: d, Oscillator: n}

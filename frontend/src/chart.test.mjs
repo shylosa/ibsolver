@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 
 // Import the browser module without adding a package-wide module convention.
 const source = await readFile(new URL('./chart.js', import.meta.url), 'utf8');
-const {normalizationDivisor, seriesPreference, verticalLimit} = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const {normalizationDivisor, seriesPreference, verticalLimit, nearestIndex, zoomRange, clampRange, TimeSeriesChart} = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 
 test('automatic normalization handles zero, negative and constant series', () => {
     for (const [values, expected] of [[[0,0],1],[[-3,-3],3],[[2,2],2],[[-7,2],7]]) {
@@ -29,4 +29,41 @@ test('preferences follow IDs and preserve all-hidden legacy settings', () => {
     assert.equal(seriesPreference(settings,b,0).scale,3);
     assert.equal(seriesPreference(settings,a,1).visible,false);
     assert.deepEqual(seriesPreference(JSON.parse(JSON.stringify(settings)),a,1),{visible:false,scale:2});
+});
+
+test('cursor zoom, pan limits and reset range on nonuniform times', () => {
+    const times = [0, .1, .9, 2, 10];
+    assert.deepEqual(zoomRange(times, [0,10], .25, .5), [1.25,6.25]);
+    assert.equal(nearestIndex(times, 1.25 + .25 * 5), 3);
+    assert.equal(nearestIndex(times, -.1), 0);
+    assert.equal(nearestIndex(times, 11), 4);
+    assert.deepEqual(clampRange(times, -9, 3), [0,3]);
+    assert.deepEqual(clampRange(times, 9, 3), [7,10]);
+    assert.deepEqual(zoomRange(times, [2,3], .5, 100), [0,10]);
+    assert(Math.abs(zoomRange(times, [2,3], .5, 1e-9)[1] - 2.505) < 1e-12);
+    const chart = {data:{time:times}, index:2, requestDraw(){}};
+    TimeSeriesChart.prototype.reset.call(chart);
+    assert.deepEqual(chart.range,[0,10]); assert.equal(chart.index,null);
+    const target = {canvas:{getBoundingClientRect:()=>({left:0,top:0,width:800,height:400})}};
+    for (const [clientX,clientY] of [[0,50],[100,0],[799,50],[100,399]]) {
+        assert.equal(TimeSeriesChart.prototype.fraction.call(target,{clientX,clientY}),null);
+    }
+    assert.equal(TimeSeriesChart.prototype.fraction.call(target,{clientX:416,clientY:100}),.5);
+});
+
+test('wheel cursor follows the actual range when zoom-out reaches a data boundary', t => {
+    globalThis.ResizeObserver = class { observe() {} };
+    t.after(() => { delete globalThis.ResizeObserver; });
+    const handlers = {};
+    const canvas = {
+        getContext: () => ({}),
+        getBoundingClientRect: () => ({left:0, top:0, width:800, height:400}),
+        addEventListener: (name, callback) => { handlers[name] = callback; },
+    };
+    const chart = new TimeSeriesChart(canvas, {}, {}, () => {});
+    chart.data = {time:Array.from({length:11}, (_, i) => i)};
+    chart.range = [8,10]; chart.requestDraw = () => {};
+    handlers.wheel({clientX:54+724*.2, clientY:100, deltaY:1000, preventDefault(){}});
+    assert.deepEqual(chart.range, [0,10]);
+    assert.equal(chart.index,2);
 });

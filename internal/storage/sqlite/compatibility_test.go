@@ -74,7 +74,11 @@ func TestLegacyFormatsPreserveStoredBytesAcrossReopen(t *testing.T) {
 						t.Fatal(err)
 					}
 					state, err := s.Load()
-					if err != nil || state.Warning != "" || state.Run == nil || state.Stale || state.Active.ID != 41 || state.Run.ID != 73 || state.Active.Mode != mode || state.Active.LatestRunID == nil || *state.Active.LatestRunID != 73 {
+					expectedMode := mode
+					if schema == 2 {
+						expectedMode = domain.ModeOscillator
+					}
+					if err != nil || state.Warning != "" || state.Run == nil || (state.Stale != (schema == 2 && mode == domain.ModeDemo)) || state.Active.ID != 41 || state.Run.ID != 73 || state.Active.Mode != expectedMode || state.Active.LatestRunID == nil || *state.Active.LatestRunID != 73 {
 						t.Fatalf("state=%+v error=%v", state, err)
 					}
 					if state.Active.CreatedAt != "created" || state.Active.UpdatedAt != "updated" || state.Run.CreatedAt != "run-created" {
