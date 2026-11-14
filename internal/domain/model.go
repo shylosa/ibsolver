@@ -30,11 +30,12 @@ func (v Inputs) Validate() error {
 }
 
 type Configuration struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	Inputs    Inputs `json:"inputs"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID        int64             `json:"id"`
+	Name      string            `json:"name"`
+	Inputs    Inputs            `json:"inputs"`
+	Numerical *NumericalExample `json:"numerical,omitempty"`
+	CreatedAt string            `json:"createdAt"`
+	UpdatedAt string            `json:"updatedAt"`
 }
 
 func (c Configuration) Validate() error {
@@ -44,7 +45,13 @@ func (c Configuration) Validate() error {
 	if c.ID < 0 {
 		return fmt.Errorf("Невірний ідентифікатор конфігурації")
 	}
-	return c.Inputs.Validate()
+	if err := c.Inputs.Validate(); err != nil {
+		return err
+	}
+	if c.Numerical != nil {
+		return c.Numerical.Validate()
+	}
+	return nil
 }
 
 type Series struct {
@@ -81,22 +88,27 @@ func (d ChartData) Validate() error {
 }
 
 type Summary struct {
-	Kind     string  `json:"kind"`
-	Samples  int     `json:"samples"`
-	Duration float64 `json:"duration"`
+	Kind      string            `json:"kind"`
+	Samples   int               `json:"samples"`
+	Duration  float64           `json:"duration"`
+	Numerical *NumericalSummary `json:"numerical,omitempty"`
 }
 
 type Run struct {
-	ID              int64     `json:"id"`
-	ConfigurationID int64     `json:"configurationId"`
-	Snapshot        Inputs    `json:"snapshot"`
-	ResultVersion   string    `json:"resultVersion"`
-	Summary         Summary   `json:"summary"`
-	Chart           ChartData `json:"chart"`
-	CreatedAt       string    `json:"createdAt"`
+	ID                int64             `json:"id"`
+	ConfigurationID   int64             `json:"configurationId"`
+	Snapshot          Inputs            `json:"snapshot"`
+	NumericalSnapshot *NumericalExample `json:"numericalSnapshot,omitempty"`
+	ResultVersion     string            `json:"resultVersion"`
+	Summary           Summary           `json:"summary"`
+	Chart             ChartData         `json:"chart"`
+	CreatedAt         string            `json:"createdAt"`
 }
 
 func (r Run) Validate() error {
+	if r.ResultVersion == NumericalVersion {
+		return r.validateNumerical()
+	}
 	if r.ResultVersion != ResultVersion || r.Summary.Kind != "DEMO" {
 		return fmt.Errorf("Несумісна версія результатів")
 	}
@@ -108,6 +120,32 @@ func (r Run) Validate() error {
 	}
 	if r.Summary.Samples != len(r.Chart.Time) || r.Summary.Samples != r.Snapshot.Samples || r.Summary.Duration != r.Snapshot.Duration {
 		return fmt.Errorf("Неповні результати")
+	}
+	return nil
+}
+
+func (r Run) validateNumerical() error {
+	if r.Summary.Kind != "NUMERICAL" || r.NumericalSnapshot == nil || r.Summary.Numerical == nil {
+		return fmt.Errorf("Неповний чисельний результат")
+	}
+	if err := r.NumericalSnapshot.Validate(); err != nil {
+		return err
+	}
+	if err := r.Chart.Validate(); err != nil {
+		return err
+	}
+	p, s := r.NumericalSnapshot.Model, r.Summary.Numerical
+	if r.Summary.Samples != p.Samples || len(r.Chart.Time) != p.Samples || r.Summary.Duration != p.Duration || r.Chart.Time[0] != 0 || r.Chart.Time[len(r.Chart.Time)-1] != p.Duration || len(r.Chart.Series) != 6 {
+		return fmt.Errorf("Неповні чисельні ряди")
+	}
+	for _, v := range []float64{s.FinalPosition, s.FinalVelocity, s.InitialEnergy, s.FinalEnergy} {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return fmt.Errorf("Некоректні чисельні підсумки")
+		}
+	}
+	stats := s.Statistics
+	if stats.Accepted < p.Samples-1 || stats.Rejected < 0 || stats.Accepted > r.NumericalSnapshot.Solver.MaxSteps || stats.Rejected > r.NumericalSnapshot.Solver.MaxSteps-stats.Accepted || stats.Evaluations != 7*(stats.Accepted+stats.Rejected) {
+		return fmt.Errorf("Некоректна статистика інтегратора")
 	}
 	return nil
 }

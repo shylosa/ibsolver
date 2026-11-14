@@ -9,6 +9,91 @@ import (
 	"ibsolver/internal/domain"
 )
 
+func TestV1MigrationPreservesDemoAndAddsNumericalPersistence(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "v1.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := domain.Configuration{Name: "Stage 1", Inputs: domain.DefaultInputs()}
+	settings := domain.DefaultSettings()
+	settings.Scales[1] = 2
+	c.ID, err = s.SaveConfiguration(c, settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, err := chartdata.Demo(c.Inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	run.ConfigurationID = c.ID
+	if err = s.SaveRun(run); err != nil {
+		t.Fatal(err)
+	}
+	before, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Remove precisely the Stage 2 additions to reproduce the Stage 1 schema.
+	if _, err = s.db.Exec(`ALTER TABLE configurations DROP COLUMN numerical_json;
+ALTER TABLE runs DROP COLUMN numerical_snapshot_json;
+PRAGMA user_version=1;`); err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+	s, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { s.Close() }()
+	after, err := s.Load()
+	if err != nil || after.Warning != "" || after.Stale || after.Active.Inputs != c.Inputs || after.Settings != before.Settings || !reflect.DeepEqual(after.Run, before.Run) || after.Active.Numerical == nil {
+		t.Fatalf("v1 migration lost data: %+v %v", after, err)
+	}
+	n := domain.DefaultNumerical()
+	n.Solver.AbsTolerance = 2e-10
+	c.Numerical = &n
+	if _, err = s.SaveConfiguration(c, after.Settings); err != nil {
+		t.Fatal(err)
+	}
+	numerical, err := chartdata.Oscillator(t.Context(), n)
+	if err != nil {
+		t.Fatal(err)
+	}
+	numerical.ConfigurationID = c.ID
+	if err = s.SaveRun(numerical); err != nil {
+		t.Fatal(err)
+	}
+	previous, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+	s, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, err = s.Load()
+	if err != nil || after.Warning != "" || after.Stale || *after.Active.Numerical != n || !reflect.DeepEqual(after.Run, previous.Run) {
+		t.Fatalf("numerical restart lost data: %v", err)
+	}
+	var demoCount int
+	if err = s.db.QueryRow("SELECT count(*) FROM runs WHERE result_version='demo-v1'").Scan(&demoCount); err != nil || demoCount != 1 {
+		t.Fatal("Stage 1 run lost", err)
+	}
+	// A numerical run must also be atomic across metadata and series writes.
+	if _, err = s.db.Exec(`CREATE TRIGGER fail_numerical BEFORE INSERT ON run_series BEGIN SELECT RAISE(ABORT, 'injected failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.SaveRun(numerical); err == nil {
+		t.Fatal("expected injected save failure")
+	}
+	after, err = s.Load()
+	if err != nil || !reflect.DeepEqual(after.Run, previous.Run) {
+		t.Fatal("failed save replaced numerical run", err)
+	}
+}
+
 func TestRestartRestoresInputsSeriesAndSettings(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.db")
 	s, err := Open(path)
@@ -63,7 +148,7 @@ func TestRestartRestoresInputsSeriesAndSettings(t *testing.T) {
 		t.Fatal("stored numeric data or immutable snapshot changed")
 	}
 	var version int
-	if err = s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 1 {
+	if err = s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 2 {
 		t.Fatalf("migration version=%d err=%v", version, err)
 	}
 	var count int

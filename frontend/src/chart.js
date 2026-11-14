@@ -62,7 +62,7 @@ export class TimeSeriesChart {
         }
         if (!data) {
             c.fillStyle = '#91a0b3'; c.textAlign = 'center';
-            c.fillText('Немає збережених рядів. Натисніть «Створити DEMO».', w / 2, h / 2);
+            c.fillText('Натисніть «Розрахувати», щоб отримати часові ряди.', w / 2, h / 2);
             this.cursor.textContent = 'Наведіть курсор на графік, щоб переглянути значення.';
             return;
         }

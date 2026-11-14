@@ -15,6 +15,7 @@ type App struct {
 	store      *sqlite.Store
 	startupErr error
 	initDone   chan struct{}
+	ctx        context.Context
 }
 
 // NewApp creates a new App application struct
@@ -25,6 +26,7 @@ func NewApp() *App {
 // startup opens local storage once; bridge calls report initialization failures.
 func (a *App) startup(ctx context.Context) {
 	defer close(a.initDone)
+	a.ctx = ctx
 	path, err := sqlite.DefaultPath()
 	if err == nil {
 		a.store, err = sqlite.Open(path)
@@ -38,7 +40,21 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) shutdown(ctx context.Context) {
 	<-a.initDone
 	if a.store != nil {
+		a.service.CancelCalculation()
 		a.store.Close()
+	}
+}
+
+func (a *App) Calculate(configurationID int64) (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.Calculate(a.ctx, configurationID)
+}
+
+func (a *App) CancelCalculation() {
+	if a.ready() == nil {
+		a.service.CancelCalculation()
 	}
 }
 
