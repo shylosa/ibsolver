@@ -8,16 +8,19 @@ import {DebouncedTask} from './debounce.mjs';
 
 document.querySelector('#app').innerHTML = `
 <header><div class="brand">IB<span>Solver</span><small>ІНЖЕНЕРНИЙ РОБОЧИЙ ПРОСТІР</small></div>
-    <span class="stage">Підготовчі дані</span><button id="reload">Відновити з БД</button></header>
+    <div class="header-actions">
+        <button id="toggle-parameters" class="toggle-parameters-btn" aria-expanded="true" title="Згорнути або розгорнути панель параметрів для звільнення робочого простору">▲ Згорнути параметри</button>
+        <button id="quick-calculate" class="primary quick-calc-btn" title="Виконати розрахунок" hidden>Розрахувати</button>
+        <span class="stage">Підготовчі дані</span><button id="reload">Відновити з БД</button>
+    </div></header>
 <section class="parameters" aria-label="Параметри конфігурації">
     <div class="configuration-row"><label>Конфігурація<select id="configurations"></select></label>
         <label>Режим<select id="mode"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option><option value="demo">DEMO · інтерфейс</option></select></label>
         <label class="name-field">Назва<input id="name" maxlength="120" required></label><button id="new">Нова</button>
         <button id="import-json">Імпорт JSON</button><button id="export-json">Експорт JSON</button><span id="save-state" role="status"></span></div>
     <form id="inputs" novalidate><div id="preparation-fields">
-        <div class="group-title">Вихідні дані</div><div id="preparation-main" class="preparation-grid"></div>
+        <div id="preparation-main" class="preparation-grid"></div>
         <details id="coefficients"><summary>Вибрані коефіцієнти · одиниці не встановлено</summary><div id="preparation-coefficients" class="preparation-grid coefficients"></div></details>
-        <p class="preparation-note">Предметні межі й обов’язковість не встановлено. Значення не пройшли фізичної перевірки.</p>
         </div><div id="oscillator-fields"><div class="numerical-fields">
         <label>Маса m, кг<input id="n-mass" type="number" min="1e-12" step="any" required></label>
         <label>Жорсткість k, Н/м<input id="n-stiffness" type="number" min="1e-12" step="any" required></label>
@@ -42,13 +45,14 @@ document.querySelector('#app').innerHTML = `
         <label>Частота, Гц<input id="frequency" type="number" min="0.000001" max="1000" step="any" required></label>
         </div><p class="hint">DEMO: математичні криві для перевірки інтерфейсу, не фізичний розрахунок.</p></div>
     <div class="actions"><button id="save" type="submit" disabled>Зберегти</button><button id="calculate" type="button" class="primary">Розрахувати</button>
-        <button id="demo" type="button" class="primary" hidden>Створити DEMO</button><span id="preparation-explanation">Розрахунковий модуль ще не реалізовано.</span><button id="cancel" type="button" disabled>Скасувати</button></div></form>
+        <button id="demo" type="button" class="primary" hidden>Створити DEMO</button><button id="cancel" type="button" disabled>Скасувати</button>
+        <span class="preparation-note">Всі вхідні дані зберігаються в SI. d вводиться в мм.</span></div></form>
 </section>
 <main><aside id="results"><div class="section-title">Результати <span id="result-kind" class="badge">RK45</span></div>
     <label class="history">Зовнішні результати<select id="external-results" aria-label="Збережені зовнішні результати"></select></label><div class="history-actions"><button id="external-metadata">Метадані</button><button id="external-delete">Видалити…</button></div>
     <p id="result-state"></p><dl id="summary"></dl><h3 id="statistics-title" hidden>Інтегратор RK45</h3><dl id="statistics" hidden></dl></aside>
     <div id="splitter" role="separator" aria-label="Ширина результатів" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="480" tabindex="0"></div>
-    <section class="chart-workspace"><div class="chart-title"><span>Часові ряди</span><span id="chart-label">Збережених даних немає</span><button id="chart-reset" title="Колесо — масштаб; перетягування — зсув; подвійний клік — увесь діапазон">Увесь графік</button><button id="import-csv">Імпорт CSV</button><button id="export-csv" disabled>CSV</button></div>
+    <section class="chart-workspace"><div class="chart-title"><span>Часові ряди</span><span id="chart-label">Збережених даних немає</span><button id="golden-ratio" class="golden-ratio-btn" title="Підігнати пропорцію поля з графіками до золотого перетину (1.618)">Золотий перетин 1.62</button><button id="chart-reset" title="Колесо — масштаб; перетягування — зсув; подвійний клік — увесь діапазон">Увесь графік</button><button id="import-csv">Імпорт CSV</button><button id="export-csv" disabled>CSV</button></div>
         <div id="legend" aria-label="Видимі ряди"></div>
         <div class="canvas-wrap"><canvas id="chart" aria-label="Спільне поле нормалізованих часових рядів"></canvas></div><div id="cursor" aria-live="off"></div></section></main>
 <dialog id="discard-dialog"><p>Не вдалося зберегти поточну чернетку. Поверніться до редагування або явно відкиньте незбережені зміни.</p><form method="dialog"><button value="return" autofocus>Повернутися до редагування</button><button value="discard">Відкинути незбережені зміни</button></form></dialog>
@@ -59,10 +63,11 @@ const $ = id => document.getElementById(id);
 for (const [key, label, unit] of preparationFields) {
     const element = document.createElement('label');
     element.className = unit ? '' : 'unknown-unit';
-    element.innerHTML = `${label}<span class="unit">${unit || 'Одиницю не встановлено'}</span><input id="p-${key}" type="text" inputmode="decimal" placeholder="Не задано" aria-describedby="p-${key}-message"><span id="p-${key}-message" class="field-message">Не задано</span>`;
+    const title = unit ? `${label}, ${unit}` : label;
+    element.innerHTML = `<span class="field-title"><span class="field-name">${title}</span></span><input id="p-${key}" type="text" inputmode="decimal" placeholder="Не задано" aria-describedby="p-${key}-message"><span id="p-${key}-message" class="field-message"></span>`;
     $(unit ? 'preparation-main' : 'preparation-coefficients').append(element);
 }
-$('p-d').closest('label').insertAdjacentHTML('beforeend', '<details class="field-help"><summary>Про одиниці d</summary>Введення в мм; збереження в метрах (мм / 1000). Числова точність — binary64.</details>');
+$('p-d').closest('label').insertAdjacentHTML('beforeend', '<details class="field-help"><summary>Про одиниці d (мм → м)</summary>Введення в мм; збереження в метрах (мм / 1000).</details>');
 let state, busy = false, dirty = false, revision = 0;
 let draftQueue = Promise.resolve(), externalChart = null;
 const delayedSave = new DebouncedTask(() => autosave(), 450);
@@ -84,7 +89,9 @@ function errorMessage(error) {
 }
 function setBusy(value) {
     busy = value;
-    document.querySelectorAll('button, select, .parameters input, #legend input').forEach(el => { if (!el.closest('dialog')) el.disabled = value || el.id === 'cancel'; });
+    document.querySelectorAll('button, select, .parameters input, #legend input').forEach(el => {
+        if (!el.closest('dialog') && el.id !== 'toggle-parameters') el.disabled = value || el.id === 'cancel';
+    });
     $('splitter').setAttribute('aria-disabled', String(value));
     $('export-csv').disabled = value || !(visibleRun() || externalChart);
     $('external-metadata').disabled = $('external-delete').disabled = value || !externalChart;
@@ -146,15 +153,24 @@ function readConfiguration() {
     return {...state.active, name, parameters};
 }
 function updateMode() {
+    if (!state) return;
     const mode = state.active.mode, numerical = mode === 'oscillator', preparation = mode === 'preparation';
     $('calculate').hidden = mode === 'demo';
     $('calculate').disabled = busy;
-    $('preparation-explanation').hidden = true;
     $('demo').hidden = mode !== 'demo';
     $('cancel').hidden = !(numerical || preparation);
+    const isCollapsed = document.querySelector('.parameters')?.classList.contains('collapsed');
+    const quickCalc = $('quick-calculate');
+    if (quickCalc) {
+        quickCalc.hidden = !isCollapsed || mode === 'demo';
+        quickCalc.disabled = busy;
+    }
     for (const [id, active] of [['oscillator-fields', numerical], ['demo-fields', mode === 'demo'], ['preparation-fields', preparation]]) {
-        $(id).hidden = !active;
-        $(id).querySelectorAll('input').forEach(field => { field.disabled = busy || !active; });
+        const el = $(id);
+        if (el) {
+            el.hidden = !active;
+            el.querySelectorAll('input').forEach(field => { field.disabled = busy || !active; });
+        }
     }
 }
 function readPreparationField(key) {
@@ -164,7 +180,7 @@ function readPreparationField(key) {
         const value = stored != null && field.value === displayPreparation(stored, key) ? stored : parsePreparation(field.value, key);
         field.setAttribute('aria-invalid', 'false');
         message.classList.remove('error');
-        message.textContent = value === null ? 'Не задано' : 'Число введено';
+        message.textContent = '';
         return value;
     } catch (error) {
         field.setAttribute('aria-invalid', 'true');
@@ -200,7 +216,7 @@ function display(next) {
     }
     for (const [key] of preparationFields) {
         $('p-' + key).value = displayPreparation(state.active.parameters.preparation?.[key], key);
-        readPreparationField(key);
+        try { readPreparationField(key); } catch {}
     }
     $('save-state').textContent = 'Збережено';
     width(state.settings.resultsWidth);
@@ -216,26 +232,58 @@ function display(next) {
     $('statistics').replaceChildren();
     $('statistics').hidden = $('statistics-title').hidden = !numerical;
     if (run) {
-        const durationFormatted = run.summary.duration < 0.1 ? `${(run.summary.duration * 1000).toPrecision(4)} мс` : `${run.summary.duration.toPrecision(6)} с`;
-        const rows = [[run.summary.configurationName ? 'Назва запуску' : 'Поточна назва', run.summary.configurationName || state.active.name], ['Режим запуску', run.mode === 'preparation' ? 'Балістика (OZVB)' : run.mode === 'oscillator' ? 'Осцилятор' : 'DEMO'], ['Точок / серію', run.summary.samples], ['Тривалість', durationFormatted], ['Серій', run.chart.series.length], ['Збережено', new Date(run.createdAt).toLocaleString('uk-UA')]];
+        let durationTerm = 'Тривалість, с';
+        let durationVal = '—';
+        if (run.summary && typeof run.summary.duration === 'number') {
+            if (run.summary.duration < 0.1) {
+                durationTerm = 'Тривалість, мс';
+                durationVal = (run.summary.duration * 1000).toFixed(2);
+            } else {
+                durationVal = run.summary.duration.toPrecision(6);
+            }
+        }
+        const rows = [
+            [run.summary.configurationName ? 'Назва запуску' : 'Поточна назва', run.summary.configurationName || state.active.name],
+            ['Режим запуску', run.mode === 'preparation' ? 'Балістика (OZVB)' : run.mode === 'oscillator' ? 'Осцилятор' : 'DEMO'],
+            ['Точок / серію', String(run.summary.samples)],
+            [durationTerm, durationVal],
+            ['Серій', String(run.chart.series.length)],
+            ['Збережено', new Date(run.createdAt).toLocaleString('uk-UA')]
+        ];
         if (ballistics && run.summary.ballistics) {
             const b = run.summary.ballistics;
             rows.push(
-                ['Макс. тиск Pm', `${b.maxPressure.toFixed(1)} МПа`],
-                ['Дульна швидкість Vd', `${b.muzzleVelocity.toFixed(1)} м/с`],
-                ['Час руху снаряда td', `${(b.muzzleTime * 1000).toFixed(2)} мс`],
-                ['Шлях снаряда Ld', `${b.barrelTravel.toFixed(3)} м`],
-                ['Маса заряду ω', `${b.chargeMass.toFixed(4)} кг`],
-                ['Обʼєм камори W₀', `${(b.chamberVolume * 1000).toFixed(3)} л`],
-                ['Положення кінця горіння ηk', `${b.burntFraction.toFixed(3)}`],
-                ['Розрахункова маса ствола', `${b.barrelMass.toFixed(1)} кг`],
+                ['Макс. тиск Pm, МПа', b.maxPressure != null ? b.maxPressure.toFixed(1) : '—'],
+                ['Дульна швидкість Vd, м/с', b.muzzleVelocity != null ? b.muzzleVelocity.toFixed(1) : '—'],
+                ['Час руху снаряда td, мс', b.muzzleTime != null ? (b.muzzleTime * 1000).toFixed(2) : '—'],
+                ['Шлях снаряда Ld, м', b.barrelTravel != null ? b.barrelTravel.toFixed(3) : '—'],
+                ['Маса заряду ω, кг', b.chargeMass != null ? b.chargeMass.toFixed(4) : '—'],
+                ['Обʼєм камори W₀, л', b.chamberVolume != null ? (b.chamberVolume * 1000).toFixed(3) : '—'],
+                ['Положення кінця горіння ηk', b.burntFraction != null ? b.burntFraction.toFixed(3) : '—'],
+                ['Розрахункова маса ствола, кг', b.barrelMass != null ? b.barrelMass.toFixed(1) : '—'],
             );
         } else if (numerical) {
             const n = run.summary.numerical, snapshot = run.snapshot.oscillator;
-            rows.push(['x(T)', `${n.finalPosition.toPrecision(6)} м`], ['v(T)', `${n.finalVelocity.toPrecision(6)} м/с`], ['E(0)', `${n.initialEnergy.toPrecision(6)} Дж`], ['E(T)', `${n.finalEnergy.toPrecision(6)} Дж`], ['Кроки / відхилено', `${n.statistics.accepted} / ${n.statistics.rejected}`], ['Обчислень RHS', n.statistics.evaluations], ['Допуски абс. / відн.', `${snapshot.solver.absTolerance} / ${snapshot.solver.relTolerance}`], ['Знімок m / k / c', `${snapshot.model.mass} кг / ${snapshot.model.stiffness} Н/м / ${snapshot.model.damping} кг/с`], ['Знімок x₀ / v₀', `${snapshot.model.position} м / ${snapshot.model.velocity} м/с`]);
+            rows.push(
+                ['x(T), м', n.finalPosition.toPrecision(6)],
+                ['v(T), м/с', n.finalVelocity.toPrecision(6)],
+                ['E(0), Дж', n.initialEnergy.toPrecision(6)],
+                ['E(T), Дж', n.finalEnergy.toPrecision(6)],
+                ['Кроки / відхилено', `${n.statistics.accepted} / ${n.statistics.rejected}`],
+                ['Обчислень RHS', String(n.statistics.evaluations)],
+                ['Допуски абс. / відн.', `${snapshot.solver.absTolerance} / ${snapshot.solver.relTolerance}`],
+                ['Знімок m, кг', String(snapshot.model.mass)],
+                ['Знімок k, Н/м', String(snapshot.model.stiffness)],
+                ['Знімок c, кг/с', String(snapshot.model.damping)],
+                ['Знімок x₀, м', String(snapshot.model.position)],
+                ['Знімок v₀, м/с', String(snapshot.model.velocity)]
+            );
         }
         for (const [key, value] of rows) {
-            const term = document.createElement('dt'), description = document.createElement('dd'); term.textContent = key; description.textContent = value; (['Кроки / відхилено', 'Обчислень RHS', 'Допуски абс. / відн.'].includes(key) ? $('statistics') : $('summary')).append(term, description);
+            const term = document.createElement('dt'), description = document.createElement('dd');
+            term.textContent = key;
+            description.textContent = value;
+            (['Кроки / відхилено', 'Обчислень RHS', 'Допуски абс. / відн.'].includes(key) ? $('statistics') : $('summary')).append(term, description);
         }
     }
     chart.set(run?.chart || null, state.settings);
@@ -363,14 +411,59 @@ $('demo').addEventListener('click', () => operation(async () => {
     if (dirty) await save();
     display(await CreateDemo(state.active.id)); status('DEMO створено та збережено. Це не фізичний розрахунок.');
 }));
-$('calculate').addEventListener('click', () => operation(async () => {
+async function runCalculate() {
     if (dirty) await save();
-    status('Виконується чисельне інтегрування RK45…');
+    const isPrep = state.active.mode === 'preparation';
+    status(isPrep ? 'Виконується балістичний розрахунок…' : 'Виконується чисельне інтегрування RK45…');
     $('calculate').textContent = 'Обчислення…';
+    $('quick-calculate').textContent = 'Обчислення…';
     $('cancel').disabled = false;
-    try { display(await Calculate(state.active.id)); status('Чисельний приклад розраховано та збережено.'); }
-    finally { $('calculate').textContent = 'Розрахувати'; $('cancel').disabled = true; }
-}));
+    try {
+        display(await Calculate(state.active.id));
+        status(isPrep ? 'Балістичний розрахунок завершено та збережено.' : 'Чисельний приклад розраховано та збережено.');
+    }
+    finally {
+        $('calculate').textContent = 'Розрахувати';
+        $('quick-calculate').textContent = 'Розрахувати';
+        $('cancel').disabled = true;
+    }
+}
+$('calculate').addEventListener('click', () => operation(runCalculate));
+$('quick-calculate').addEventListener('click', () => operation(runCalculate));
+
+function toggleParameters(force) {
+    const section = document.querySelector('.parameters');
+    if (!section) return;
+    const isCollapsed = force !== undefined ? force : !section.classList.contains('collapsed');
+    section.classList.toggle('collapsed', isCollapsed);
+    const toggleBtn = $('toggle-parameters');
+    if (toggleBtn) {
+        toggleBtn.textContent = isCollapsed ? '▼ Розгорнути параметри' : '▲ Згорнути параметри';
+        toggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
+    }
+    const quickCalc = $('quick-calculate');
+    if (quickCalc) quickCalc.hidden = !isCollapsed || state?.active?.mode === 'demo';
+    localStorage.setItem('ibsolver_params_collapsed', isCollapsed ? '1' : '0');
+    if (chart && typeof chart.requestDraw === 'function') chart.requestDraw();
+}
+$('toggle-parameters').addEventListener('click', () => toggleParameters());
+
+function applyGoldenRatio() {
+    const mainRect = document.querySelector('main').getBoundingClientRect();
+    const canvasWrap = document.querySelector('.canvas-wrap');
+    if (!canvasWrap) return;
+    const h = canvasWrap.clientHeight;
+    if (h <= 0) return;
+    const targetW = h * 1.618;
+    const idealSidebar = mainRect.width - targetW - 31;
+    const clampedSidebar = Math.round(Math.max(180, Math.min(480, idealSidebar)));
+    width(clampedSidebar);
+    persistSettings();
+    chart.requestDraw();
+    status(`Пропорції поля графіка оптимізовано до золотого перетину 1.62 (сайдбар: ${clampedSidebar}px).`);
+}
+$('golden-ratio').addEventListener('click', applyGoldenRatio);
+
 $('cancel').addEventListener('click', async () => {
     $('cancel').disabled = true;
     try { await CancelCalculation(); status('Запит на скасування надіслано.'); }
@@ -404,7 +497,12 @@ splitter.addEventListener('keydown', event => {
     if (!state || busy || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault(); width(state.settings.resultsWidth + (event.key === 'ArrowRight' ? 10 : -10)); persistSettings();
 });
-operation(async () => display(await LoadState()));
+operation(async () => {
+    display(await LoadState());
+    if (localStorage.getItem('ibsolver_params_collapsed') === '1') {
+        toggleParameters(true);
+    }
+});
 
 EventsOn('close-request', () => operation(async () => {
     await flushForTransition();
