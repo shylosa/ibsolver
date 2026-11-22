@@ -21,8 +21,9 @@ func TestPreparationPersistenceExchangeAndHistoricalRun(t *testing.T) {
 	if err != nil || state.Active.Mode != domain.ModePreparation || state.Run != nil {
 		t.Fatalf("default: %+v %v", state, err)
 	}
-	if _, err := service.Calculate(t.Context(), state.Active.ID); err == nil {
-		t.Fatal("calculated preparation")
+	state, err = service.Calculate(t.Context(), state.Active.ID)
+	if err != nil || state.Run == nil || len(state.Run.Chart.Series) != 6 || state.Run.Summary.Kind != "BALLISTICS" {
+		t.Fatalf("failed to calculate preparation ballistics: %+v %v", state.Run, err)
 	}
 	if _, err := service.CreateDemo(state.Active.ID); err == nil {
 		t.Fatal("generated demo for preparation")

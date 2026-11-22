@@ -27,6 +27,20 @@ func (p PreparationInputs) Validate() error {
 	return nil
 }
 
+func (p PreparationInputs) Equal(other PreparationInputs) bool {
+	eq := func(a, b *float64) bool {
+		if a == nil && b == nil {
+			return true
+		}
+		if a == nil || b == nil {
+			return false
+		}
+		return *a == *b
+	}
+	return eq(p.D, other.D) && eq(p.Q, other.Q) && eq(p.Vd, other.Vd) &&
+		eq(p.Lc, other.Lc) && eq(p.Ns, other.Ns) && eq(p.F1, other.F1) && eq(p.Af, other.Af)
+}
+
 func NewPreparationParameters() Parameters {
 	p := DefaultParameters()
 	p.Preparation = &PreparationInputs{}

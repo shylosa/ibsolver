@@ -8,6 +8,9 @@ func SeriesID(mode Mode, index int) string {
 	if mode == ModeOscillator {
 		names = []string{"position", "velocity", "acceleration", "kinetic-energy", "potential-energy", "total-energy"}
 	}
+	if mode == ModePreparation {
+		names = []string{"p", "t", "v", "l", "psi", "g"}
+	}
 	if index >= 0 && index < len(names) {
 		return string(mode) + ":" + names[index]
 	}

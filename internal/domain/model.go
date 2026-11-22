@@ -7,6 +7,7 @@ import (
 )
 
 const ResultVersion = "demo-v1"
+const BallisticsVersion = "ballistics-v1"
 
 type Inputs struct {
 	Duration  float64 `json:"duration"`
@@ -133,12 +134,24 @@ func (d ChartData) Validate() error {
 	return nil
 }
 
+type BallisticsSummary struct {
+	MaxPressure    float64 `json:"maxPressure"`    // MPa
+	MuzzleVelocity float64 `json:"muzzleVelocity"` // m/s
+	MuzzleTime     float64 `json:"muzzleTime"`     // s
+	BarrelTravel   float64 `json:"barrelTravel"`   // m
+	BurntFraction  float64 `json:"burntFraction"`  // ETAk
+	ChamberVolume  float64 `json:"chamberVolume"`  // m^3
+	ChargeMass     float64 `json:"chargeMass"`     // kg
+	BarrelMass     float64 `json:"barrelMass"`     // kg
+}
+
 type Summary struct {
-	ConfigurationName string            `json:"configurationName,omitempty"`
-	Kind              string            `json:"kind"`
-	Samples           int               `json:"samples"`
-	Duration          float64           `json:"duration"`
-	Numerical         *NumericalSummary `json:"numerical,omitempty"`
+	ConfigurationName string             `json:"configurationName,omitempty"`
+	Kind              string             `json:"kind"`
+	Samples           int                `json:"samples"`
+	Duration          float64            `json:"duration"`
+	Numerical         *NumericalSummary  `json:"numerical,omitempty"`
+	Ballistics        *BallisticsSummary `json:"ballistics,omitempty"`
 }
 
 type Run struct {
@@ -156,6 +169,9 @@ func (r Run) Validate() error {
 	if r.ResultVersion == NumericalVersion && r.Mode == ModeOscillator {
 		return r.validateNumerical()
 	}
+	if r.ResultVersion == BallisticsVersion && r.Mode == ModePreparation {
+		return r.validateBallistics()
+	}
 	if r.ResultVersion != ResultVersion || r.Mode != ModeDemo || r.Summary.Kind != "DEMO" {
 		return fmt.Errorf("Несумісна версія результатів")
 	}
@@ -167,6 +183,28 @@ func (r Run) Validate() error {
 	}
 	if r.Summary.Samples != len(r.Chart.Time) || r.Summary.Samples != r.Snapshot.Demo.Samples || r.Summary.Duration != r.Snapshot.Demo.Duration {
 		return fmt.Errorf("Неповні результати")
+	}
+	return nil
+}
+
+func (r Run) validateBallistics() error {
+	if r.Summary.Kind != "BALLISTICS" || r.Snapshot.Preparation == nil || r.Summary.Ballistics == nil {
+		return fmt.Errorf("Неповний балістичний результат")
+	}
+	if err := r.Snapshot.Validate(r.Mode); err != nil {
+		return err
+	}
+	if err := r.Chart.Validate(); err != nil {
+		return err
+	}
+	s := r.Summary.Ballistics
+	if r.Summary.Samples != len(r.Chart.Time) || len(r.Chart.Series) != 6 {
+		return fmt.Errorf("Неповні балістичні ряди")
+	}
+	for _, v := range []float64{s.MaxPressure, s.MuzzleVelocity, s.MuzzleTime, s.BarrelTravel, s.BurntFraction, s.ChamberVolume, s.ChargeMass, s.BarrelMass} {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return fmt.Errorf("Некоректні балістичні підсумки")
+		}
 	}
 	return nil
 }

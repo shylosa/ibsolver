@@ -45,13 +45,18 @@ func (s *Service) Calculate(ctx context.Context, configurationID int64) (domain.
 		s.mu.Unlock()
 		return state, err
 	}
-	if state.Active.Mode == domain.ModePreparation {
-		s.mu.Unlock()
-		return state, fmt.Errorf("Розрахунковий модуль для підготовчих даних ще не реалізовано")
-	}
-	if state.Active.ID != configurationID || state.Active.Mode != domain.ModeOscillator || state.Active.Parameters.Oscillator == nil {
+	if state.Active.ID != configurationID {
 		s.mu.Unlock()
 		return state, fmt.Errorf("Активна конфігурація змінилася")
+	}
+	mode := state.Active.Mode
+	if mode != domain.ModeOscillator && mode != domain.ModePreparation {
+		s.mu.Unlock()
+		return state, fmt.Errorf("Для активного режиму розрахунок не підтримується")
+	}
+	if mode == domain.ModeOscillator && state.Active.Parameters.Oscillator == nil {
+		s.mu.Unlock()
+		return state, fmt.Errorf("Відсутні параметри осцилятора")
 	}
 	if s.cancel != nil {
 		s.mu.Unlock()
@@ -59,10 +64,20 @@ func (s *Service) Calculate(ctx context.Context, configurationID int64) (domain.
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
-	input := *state.Active.Parameters.Oscillator
+	activeParams := state.Active.Parameters
 	s.mu.Unlock()
 	defer func() { cancel(); s.mu.Lock(); s.cancel = nil; s.mu.Unlock() }()
-	run, err := chartdata.Oscillator(ctx, input)
+
+	var run domain.Run
+	if mode == domain.ModeOscillator {
+		run, err = chartdata.Oscillator(ctx, *activeParams.Oscillator)
+	} else {
+		prep := domain.PreparationInputs{}
+		if activeParams.Preparation != nil {
+			prep = *activeParams.Preparation
+		}
+		run, err = chartdata.Ballistics(ctx, prep)
+	}
 	if err != nil {
 		return state, err
 	}

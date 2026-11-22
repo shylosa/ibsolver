@@ -151,7 +151,7 @@ export class TimeSeriesChart {
         c.restore();
         this.cursor.replaceChildren();
         const intro = document.createElement('span');
-        intro.textContent = this.index === null ? 'Кожна крива: y / опора · масштаб; опора — задана або max|y|. Значення курсора — вихідні.' : `t = ${times[this.index].toFixed(3)} с`;
+        intro.textContent = this.index === null ? 'Кожна крива: y / опора · масштаб; опора — задана або max|y|. Значення курсора — вихідні.' : `t = ${times[this.index] < 0.1 ? (times[this.index] * 1000).toFixed(3) + ' мс' : times[this.index].toFixed(3) + ' с'}`;
         this.cursor.append(intro);
         if (this.index !== null) data.series.forEach((s, j) => {
             const preference = seriesPreference(settings, s, j);

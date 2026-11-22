@@ -148,10 +148,10 @@ function readConfiguration() {
 function updateMode() {
     const mode = state.active.mode, numerical = mode === 'oscillator', preparation = mode === 'preparation';
     $('calculate').hidden = mode === 'demo';
-    $('calculate').disabled = busy || preparation;
-    $('preparation-explanation').hidden = !preparation;
+    $('calculate').disabled = busy;
+    $('preparation-explanation').hidden = true;
     $('demo').hidden = mode !== 'demo';
-    $('cancel').hidden = !numerical;
+    $('cancel').hidden = !(numerical || preparation);
     for (const [id, active] of [['oscillator-fields', numerical], ['demo-fields', mode === 'demo'], ['preparation-fields', preparation]]) {
         $(id).hidden = !active;
         $(id).querySelectorAll('input').forEach(field => { field.disabled = busy || !active; });
@@ -182,8 +182,10 @@ function validNumber(field, value) {
     return valid;
 }
 function resultState(stale = state.stale) {
-    if (state.active.mode === 'preparation') return 'Немає сумісного результату для підготовчих даних. Розрахунковий модуль ще не реалізовано.' + (state.run ? ` Збережений запуск іншого режиму: ${state.run.mode}, №${state.run.id}, ${new Date(state.run.createdAt).toLocaleString('uk-UA')}. Виберіть відповідний режим для перегляду.` : '');
-    return state.run ? (stale ? 'Попередній запуск · параметри змінено' : state.run.summary.kind === 'NUMERICAL' ? 'Збережений чисельний результат' : 'Збережені демонстраційні дані') : 'Результатів ще немає';
+    if (state.run && state.run.mode !== state.active.mode) {
+        return `Збережений запуск іншого режиму: ${state.run.mode}, №${state.run.id}, ${new Date(state.run.createdAt).toLocaleString('uk-UA')}. Виберіть відповідний режим для перегляду.`;
+    }
+    return state.run ? (stale ? 'Попередній запуск · параметри змінено' : state.run.summary.kind === 'BALLISTICS' ? 'Збережений балістичний розрахунок' : state.run.summary.kind === 'NUMERICAL' ? 'Збережений чисельний результат' : 'Збережені демонстраційні дані') : 'Результатів ще немає';
 }
 function display(next) {
     state = next; dirty = false; externalChart = null; revision++;
@@ -207,14 +209,28 @@ function display(next) {
     $('result-state').textContent = resultState();
     $('result-state').classList.toggle('stale', state.stale);
     const numerical = run?.summary.kind === 'NUMERICAL';
-    $('result-kind').textContent = state.active.mode === 'preparation' ? 'ДАНІ' : numerical || !run ? 'RK45' : 'DEMO';
-    $('chart-label').textContent = run ? `${numerical ? 'Чисельний приклад · RK45' : 'DEMO'} · запуск №${run.id}` : 'Збережених даних немає';
+    const ballistics = run?.summary.kind === 'BALLISTICS';
+    $('result-kind').textContent = state.active.mode === 'preparation' ? (ballistics ? 'БАЛІСТИКА' : 'ДАНІ') : numerical || !run ? 'RK45' : 'DEMO';
+    $('chart-label').textContent = run ? `${ballistics ? 'Внутрішня балістика · OZVB' : numerical ? 'Чисельний приклад · RK45' : 'DEMO'} · запуск №${run.id}` : 'Збережених даних немає';
     $('summary').replaceChildren();
     $('statistics').replaceChildren();
     $('statistics').hidden = $('statistics-title').hidden = !numerical;
     if (run) {
-        const rows = [[run.summary.configurationName ? 'Назва запуску' : 'Поточна назва', run.summary.configurationName || state.active.name], ['Режим запуску', run.mode === 'oscillator' ? 'Осцилятор' : 'DEMO'], ['Точок / серію', run.summary.samples], ['Тривалість', `${run.summary.duration.toPrecision(6)} с`], ['Серій', run.chart.series.length], ['Збережено', new Date(run.createdAt).toLocaleString('uk-UA')]];
-        if (numerical) {
+        const durationFormatted = run.summary.duration < 0.1 ? `${(run.summary.duration * 1000).toPrecision(4)} мс` : `${run.summary.duration.toPrecision(6)} с`;
+        const rows = [[run.summary.configurationName ? 'Назва запуску' : 'Поточна назва', run.summary.configurationName || state.active.name], ['Режим запуску', run.mode === 'preparation' ? 'Балістика (OZVB)' : run.mode === 'oscillator' ? 'Осцилятор' : 'DEMO'], ['Точок / серію', run.summary.samples], ['Тривалість', durationFormatted], ['Серій', run.chart.series.length], ['Збережено', new Date(run.createdAt).toLocaleString('uk-UA')]];
+        if (ballistics && run.summary.ballistics) {
+            const b = run.summary.ballistics;
+            rows.push(
+                ['Макс. тиск Pm', `${b.maxPressure.toFixed(1)} МПа`],
+                ['Дульна швидкість Vd', `${b.muzzleVelocity.toFixed(1)} м/с`],
+                ['Час руху снаряда td', `${(b.muzzleTime * 1000).toFixed(2)} мс`],
+                ['Шлях снаряда Ld', `${b.barrelTravel.toFixed(3)} м`],
+                ['Маса заряду ω', `${b.chargeMass.toFixed(4)} кг`],
+                ['Обʼєм камори W₀', `${(b.chamberVolume * 1000).toFixed(3)} л`],
+                ['Положення кінця горіння ηk', `${b.burntFraction.toFixed(3)}`],
+                ['Розрахункова маса ствола', `${b.barrelMass.toFixed(1)} кг`],
+            );
+        } else if (numerical) {
             const n = run.summary.numerical, snapshot = run.snapshot.oscillator;
             rows.push(['x(T)', `${n.finalPosition.toPrecision(6)} м`], ['v(T)', `${n.finalVelocity.toPrecision(6)} м/с`], ['E(0)', `${n.initialEnergy.toPrecision(6)} Дж`], ['E(T)', `${n.finalEnergy.toPrecision(6)} Дж`], ['Кроки / відхилено', `${n.statistics.accepted} / ${n.statistics.rejected}`], ['Обчислень RHS', n.statistics.evaluations], ['Допуски абс. / відн.', `${snapshot.solver.absTolerance} / ${snapshot.solver.relTolerance}`], ['Знімок m / k / c', `${snapshot.model.mass} кг / ${snapshot.model.stiffness} Н/м / ${snapshot.model.damping} кг/с`], ['Знімок x₀ / v₀', `${snapshot.model.position} м / ${snapshot.model.velocity} м/с`]);
         }
