@@ -9,9 +9,10 @@ import {DebouncedTask} from './debounce.mjs';
 document.querySelector('#app').innerHTML = `
 <header><div class="brand">IB<span>Solver</span><small>ІНЖЕНЕРНИЙ РОБОЧИЙ ПРОСТІР</small></div>
     <div class="header-actions">
-        <button id="toggle-parameters" class="toggle-parameters-btn" aria-expanded="true" title="Згорнути або розгорнути панель параметрів для звільнення робочого простору">▲ Згорнути параметри</button>
+        <span class="stage">Підготовчі дані</span>
+        <button id="reload">Відновити з БД</button>
         <button id="quick-calculate" class="primary quick-calc-btn" title="Виконати розрахунок" hidden>Розрахувати</button>
-        <span class="stage">Підготовчі дані</span><button id="reload">Відновити з БД</button>
+        <button id="toggle-parameters" class="toggle-parameters-btn" aria-expanded="true" title="Згорнути або розгорнути панель параметрів для звільнення робочого простору">▲ Згорнути параметри</button>
     </div></header>
 <section class="parameters" aria-label="Параметри конфігурації">
     <div class="configuration-row"><label>Конфігурація<select id="configurations"></select></label>

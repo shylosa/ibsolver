@@ -1,4 +1,5 @@
 const colors = ['#60c5fa', '#f1b75e', '#b49af8', '#6ed6b2', '#ed8598', '#c9d86a'];
+const millisecondsPerSecond = 1000;
 
 export const verticalLimit = 1.25;
 
@@ -116,11 +117,11 @@ export class TimeSeriesChart {
         }
         const left = 54, top = 22, pw = Math.max(1, w - 76), ph = Math.max(1, h - 66);
         c.font = '11px Consolas, monospace';
-        const ticks = ph < 80 ? 2 : 4;
+        const ticks = ph < 80 ? 2 : 5;
         for (let i = 0; i <= ticks; i++) {
             const y = top + i * ph / ticks;
             c.strokeStyle = '#283446'; c.beginPath(); c.moveTo(left, y); c.lineTo(left + pw, y); c.stroke();
-            c.fillStyle = '#91a0b3'; c.textAlign = 'right'; c.fillText(((1 - 2 * i / ticks) * verticalLimit).toFixed(2), left - 10, y + 4);
+            c.fillStyle = '#91a0b3'; c.textAlign = 'right'; c.fillText((verticalLimit * (1 - i / ticks)).toFixed(2), left - 10, y + 4);
         }
         const times = data.time;
         const [min, max] = this.range;
@@ -130,9 +131,10 @@ export class TimeSeriesChart {
             const x = left + pw * i / 5;
             c.strokeStyle = '#283446'; c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke();
             c.fillStyle = '#91a0b3'; c.textAlign = 'center';
-            c.fillText((min + (max - min) * i / 5).toPrecision(5), x, top + ph + 21);
+            const tickTime = min + (max - min) * i / 5;
+            c.fillText((tickTime * millisecondsPerSecond).toPrecision(5), x, top + ph + 21);
         }
-        c.fillText('Час, с', left + pw / 2, h - 7);
+        c.fillText('Час, мс', left + pw / 2, h - 7);
         c.save(); c.beginPath(); c.rect(left, top, pw, ph); c.clip();
         data.series.forEach((s, j) => {
             const preference = seriesPreference(settings, s, j);
@@ -140,7 +142,8 @@ export class TimeSeriesChart {
             c.strokeStyle = colors[j]; c.lineWidth = 1.5; c.beginPath();
             for (let i = first; i <= last; i++) {
                 const value = s.values[i];
-                const y = top + ph / 2 * (1 - Math.max(-1e9, Math.min(1e9, value / this.divisors[j] * preference.scale)) / verticalLimit);
+                const normalised = Math.max(-verticalLimit * 1e9, Math.min(verticalLimit * 1e9, value / this.divisors[j] * preference.scale));
+                const y = top + ph * (1 - normalised / verticalLimit);
                 if (i === first) c.moveTo(xAt(i), y); else c.lineTo(xAt(i), y);
             } c.stroke();
         });
@@ -151,7 +154,9 @@ export class TimeSeriesChart {
         c.restore();
         this.cursor.replaceChildren();
         const intro = document.createElement('span');
-        intro.textContent = this.index === null ? 'Кожна крива: y / опора · масштаб; опора — задана або max|y|. Значення курсора — вихідні.' : `t = ${times[this.index] < 0.1 ? (times[this.index] * 1000).toFixed(3) + ' мс' : times[this.index].toFixed(3) + ' с'}`;
+        intro.textContent = this.index === null
+            ? 'Кожна крива: y / опора · масштаб; опора — задана або max|y|. Значення курсора — вихідні.'
+            : `t = ${(times[this.index] * millisecondsPerSecond).toFixed(3)} мс`;
         this.cursor.append(intro);
         if (this.index !== null) data.series.forEach((s, j) => {
             const preference = seriesPreference(settings, s, j);
