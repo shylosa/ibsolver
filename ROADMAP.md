@@ -70,4 +70,5 @@
 | 2026-11-22 | FRONT-01 (a7afc0a) | Фронтенд: main.js, style.css — фінальний UI для всіх трьох режимів | go test ✅, npm test ✅ |
 | 2026-11-23 | — | Додано GEMINI.md, ROADMAP.md, .agents/skills/code-review-and-commit/SKILL.md | go test ✅ |
 | 2026-11-23 | — | Об’єднано правила агента в AGENTS.md, узгоджено порядок перевірок і оновлено посилання в навичці перевірки коду | go test ./... ✅, npm test ✅ |
+| 2026-11-23 | legacy-ref-1 | Архівне читання `Бак.xls` / `Бакалаврская.xls` → `docs/legacy-reference/` (cells/series/manifest/REPORT); ядро IBSolver не змінювалось | SHA-256 оригіналів ✅, CSV round-trip ✅ |
 | 2026-11-23 | — | Зафіксовано висоту панелі курсора. Часову вісь і показник часу під курсором переведено в мілісекунди | go test ./... ✅, npm test ✅, Wails build ✅, наведення у WebView2 ✅ |

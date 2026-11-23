@@ -1,0 +1,985 @@
+{
+  "generated_at_utc": "2026-11-23T18:54:05.473217+00:00",
+  "tooling": {
+    "python": "3.13.12",
+    "xlrd": "2.0.2",
+    "olefile": "0.47",
+    "notes": [
+      "Source XLS opened read-only; no formula recalculation.",
+      "Formula expressions (Excel text) were not decompiled from BIFF RPN; formula cells are identified via FORMULA records and cached results.",
+      "Formatted blank cells excluded from cells.csv.",
+      "Chart data links recovered from BIFF8 AI (0x1051) records."
+    ]
+  },
+  "workbooks": [
+    {
+      "file_name": "Бак.xls",
+      "path": "D:\\go\\ibsolver-refs\\Бак.xls",
+      "size_bytes": 81408,
+      "sha256_before": "F3F3CB1B62951013CF8147BA2DB2E5A9CDBD50CB4D8C9F06EF28D75B122E32ED",
+      "sheets": [
+        {
+          "name": "Расчеты",
+          "nrows_reported": 74,
+          "ncols_reported": 13,
+          "nonempty_exported": 149,
+          "counts": {
+            "formatted_blank": 152,
+            "text": 93,
+            "number": 7,
+            "formula_number": 49
+          },
+          "used_range": "B3:M74",
+          "formula_cells": 49,
+          "number_literal_cells": 7,
+          "text_cells": 93,
+          "formatted_blank_skipped": 152
+        },
+        {
+          "name": "Таблица 1 (Слухоцкого)",
+          "nrows_reported": 19,
+          "ncols_reported": 11,
+          "nonempty_exported": 100,
+          "counts": {
+            "formatted_blank": 87,
+            "text": 16,
+            "number": 84
+          },
+          "used_range": "B3:I18",
+          "formula_cells": 0,
+          "number_literal_cells": 84,
+          "text_cells": 16,
+          "formatted_blank_skipped": 87
+        },
+        {
+          "name": "Таблица 2",
+          "nrows_reported": 23,
+          "ncols_reported": 10,
+          "nonempty_exported": 59,
+          "counts": {
+            "formatted_blank": 96,
+            "text": 59
+          },
+          "used_range": "B2:F16",
+          "formula_cells": 0,
+          "number_literal_cells": 0,
+          "text_cells": 59,
+          "formatted_blank_skipped": 96
+        },
+        {
+          "name": "Таблица 3",
+          "nrows_reported": 16,
+          "ncols_reported": 8,
+          "nonempty_exported": 36,
+          "counts": {
+            "formatted_blank": 67,
+            "text": 31,
+            "number": 5
+          },
+          "used_range": "B2:F10",
+          "formula_cells": 0,
+          "number_literal_cells": 5,
+          "text_cells": 31,
+          "formatted_blank_skipped": 67
+        }
+      ],
+      "sheet_names": [
+        "Расчеты",
+        "Таблица 1 (Слухоцкого)",
+        "Таблица 2",
+        "Таблица 3"
+      ],
+      "formula_cells_biff": 49,
+      "formulas_per_sheet": {
+        "Расчеты": 49,
+        "Таблица 1 (Слухоцкого)": 0,
+        "Таблица 2": 0,
+        "Таблица 3": 0
+      },
+      "ole": {
+        "equation_native_count": 16,
+        "stream_count": 52
+      },
+      "charts_count": 0,
+      "charts": [],
+      "exported_cells": 344,
+      "numeric_exported": 145,
+      "sha256_after": "F3F3CB1B62951013CF8147BA2DB2E5A9CDBD50CB4D8C9F06EF28D75B122E32ED",
+      "sha256_unchanged": true
+    },
+    {
+      "file_name": "Бакалаврская.xls",
+      "path": "D:\\go\\ibsolver-refs\\Бакалаврская.xls",
+      "size_bytes": 70656,
+      "sha256_before": "1A7DCDECCCA08B79CF07B6826A8F7182213C852E9CFE2213AC16748CE19868A6",
+      "sheets": [
+        {
+          "name": "Давления",
+          "nrows_reported": 69,
+          "ncols_reported": 25,
+          "nonempty_exported": 584,
+          "counts": {
+            "text": 10,
+            "number": 447,
+            "formatted_blank": 61,
+            "formula_number": 127
+          },
+          "used_range": "A1:Y69",
+          "formula_cells": 127,
+          "number_literal_cells": 447,
+          "text_cells": 10,
+          "formatted_blank_skipped": 61
+        },
+        {
+          "name": "Апроксимация",
+          "nrows_reported": 64,
+          "ncols_reported": 3,
+          "nonempty_exported": 192,
+          "counts": {
+            "text": 3,
+            "number": 126,
+            "formula_number": 63
+          },
+          "used_range": "A1:C64",
+          "formula_cells": 63,
+          "number_literal_cells": 126,
+          "text_cells": 3,
+          "formatted_blank_skipped": 0
+        },
+        {
+          "name": "На дно снаряда",
+          "nrows_reported": 69,
+          "ncols_reported": 12,
+          "nonempty_exported": 466,
+          "counts": {
+            "text": 8,
+            "number": 457,
+            "formatted_blank": 162,
+            "formula_number": 1
+          },
+          "used_range": "C1:L69",
+          "formula_cells": 1,
+          "number_literal_cells": 457,
+          "text_cells": 8,
+          "formatted_blank_skipped": 162
+        }
+      ],
+      "sheet_names": [
+        "Давления",
+        "Апроксимация",
+        "На дно снаряда"
+      ],
+      "formula_cells_biff": 191,
+      "formulas_per_sheet": {
+        "Давления": 127,
+        "Апроксимация": 63,
+        "На дно снаряда": 1
+      },
+      "ole": {
+        "equation_native_count": 0,
+        "stream_count": 3
+      },
+      "charts_count": 14,
+      "charts": [
+        {
+          "chart_index": 0,
+          "name": "Давление и путь от времени",
+          "host_sheet": "Давления",
+          "chart_on_sheet_index": 0,
+          "title": "Давление и путь от времени",
+          "x_axis_title": "t",
+          "y_axis_title": "P,L",
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p",
+              "title_ref": "Давления!B1",
+              "values_ref": "Давления!B2:B64",
+              "categories_ref": "Давления!A2:A64",
+              "point_count": 63,
+              "category_count": 63
+            },
+            {
+              "name": "l",
+              "title_ref": "Давления!C1",
+              "values_ref": "Давления!C2:C64",
+              "categories_ref": "Давления!A2:A64",
+              "point_count": 63,
+              "category_count": 63
+            }
+          ]
+        },
+        {
+          "chart_index": 1,
+          "name": "Давления::chart1",
+          "host_sheet": "Давления",
+          "chart_on_sheet_index": 1,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p",
+              "title_ref": "Давления!D1",
+              "values_ref": "Давления!D2:D64",
+              "categories_ref": "Давления!C2:C64",
+              "point_count": 63,
+              "category_count": 63
+            }
+          ]
+        },
+        {
+          "chart_index": 2,
+          "name": "Давления::chart2",
+          "host_sheet": "Давления",
+          "chart_on_sheet_index": 2,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p_30",
+              "title_ref": "Давления!F1",
+              "values_ref": "Давления!F2:F69",
+              "categories_ref": "Давления!E2:E69",
+              "point_count": 68,
+              "category_count": 68
+            }
+          ]
+        },
+        {
+          "chart_index": 3,
+          "name": "Кривые давлений",
+          "host_sheet": "Давления",
+          "chart_on_sheet_index": 3,
+          "title": "Кривые давлений",
+          "x_axis_title": "l,м",
+          "y_axis_title": "P,Па",
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p_30",
+              "title_ref": "Давления!F1",
+              "values_ref": "Давления!F2:F69",
+              "categories_ref": "Давления!E2:E69",
+              "point_count": 68,
+              "category_count": 68
+            },
+            {
+              "name": "p",
+              "title_ref": "Давления!D1",
+              "values_ref": "Давления!D2:D64",
+              "categories_ref": "Давления!C2:C64",
+              "point_count": 63,
+              "category_count": 63
+            },
+            {
+              "name": "p40",
+              "title_ref": "Давления!H1",
+              "values_ref": "Давления!H2:H62",
+              "categories_ref": "Давления!G2:G62",
+              "point_count": 61,
+              "category_count": 61
+            }
+          ]
+        },
+        {
+          "chart_index": 4,
+          "name": "Давления::chart4",
+          "host_sheet": "Давления",
+          "chart_on_sheet_index": 4,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p40",
+              "title_ref": "Давления!H1",
+              "values_ref": "Давления!H2:H62",
+              "categories_ref": "Давления!G2:G62",
+              "point_count": 61,
+              "category_count": 61
+            }
+          ]
+        },
+        {
+          "chart_index": 5,
+          "name": "Апроксимация::chart0",
+          "host_sheet": "Апроксимация",
+          "chart_on_sheet_index": 0,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p",
+              "title_ref": "Апроксимация!B1",
+              "values_ref": "Апроксимация!B2:B64",
+              "categories_ref": "Апроксимация!A2:A64",
+              "point_count": 63,
+              "category_count": 63
+            },
+            {
+              "name": null,
+              "title_ref": null,
+              "values_ref": "Апроксимация!C2:C64",
+              "categories_ref": "Апроксимация!A2:A64",
+              "point_count": 63,
+              "category_count": 63
+            }
+          ]
+        },
+        {
+          "chart_index": 6,
+          "name": "Кривые давлений для расчёта на прочность",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 0,
+          "title": "Кривые давлений для расчёта на прочность",
+          "x_axis_title": "l,м",
+          "y_axis_title": "P,Па",
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p",
+              "title_ref": "На дно снаряда!D1",
+              "values_ref": "На дно снаряда!D2:D64",
+              "categories_ref": "На дно снаряда!C2:C64",
+              "point_count": 63,
+              "category_count": 63
+            },
+            {
+              "name": "p_30",
+              "title_ref": "На дно снаряда!F1",
+              "values_ref": "На дно снаряда!F2:F69",
+              "categories_ref": "На дно снаряда!E2:E69",
+              "point_count": 68,
+              "category_count": 68
+            },
+            {
+              "name": "p40",
+              "title_ref": "На дно снаряда!H1",
+              "values_ref": "На дно снаряда!H2:H62",
+              "categories_ref": "На дно снаряда!G2:G62",
+              "point_count": 61,
+              "category_count": 61
+            },
+            {
+              "name": "Давление",
+              "title_ref": null,
+              "values_ref": "На дно снаряда!L41:L42",
+              "categories_ref": "На дно снаряда!K41:K42",
+              "point_count": 2,
+              "category_count": 2
+            }
+          ]
+        },
+        {
+          "chart_index": 7,
+          "name": "На дно снаряда::chart1",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 1,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p_30",
+              "title_ref": "На дно снаряда!F1",
+              "values_ref": "На дно снаряда!F2:F69",
+              "categories_ref": "На дно снаряда!E2:E69",
+              "point_count": 68,
+              "category_count": 68
+            }
+          ]
+        },
+        {
+          "chart_index": 8,
+          "name": "На дно снаряда::chart2",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 2,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p40",
+              "title_ref": "На дно снаряда!H1",
+              "values_ref": "На дно снаряда!H2:H62",
+              "categories_ref": "На дно снаряда!G2:G62",
+              "point_count": 61,
+              "category_count": 61
+            }
+          ]
+        },
+        {
+          "chart_index": 9,
+          "name": "На дно снаряда::chart3",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 3,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p",
+              "title_ref": "На дно снаряда!D1",
+              "values_ref": "На дно снаряда!D2:D64",
+              "categories_ref": "На дно снаряда!C2:C64",
+              "point_count": 63,
+              "category_count": 63
+            }
+          ]
+        },
+        {
+          "chart_index": 10,
+          "name": "На дно снаряда::chart4",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 4,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": null,
+              "title_ref": null,
+              "values_ref": "На дно снаряда!L38:L39",
+              "categories_ref": "На дно снаряда!K38:K39",
+              "point_count": 2,
+              "category_count": 2
+            }
+          ]
+        },
+        {
+          "chart_index": 11,
+          "name": "На дно снаряда::chart5",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 5,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": null,
+              "title_ref": null,
+              "values_ref": "На дно снаряда!L41:L42",
+              "categories_ref": "На дно снаряда!K41:K42",
+              "point_count": 2,
+              "category_count": 2
+            }
+          ]
+        },
+        {
+          "chart_index": 12,
+          "name": "Для расчёта на прочность",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 6,
+          "title": "Для расчёта на прочность",
+          "x_axis_title": "l,м",
+          "y_axis_title": "P,Па",
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "p",
+              "title_ref": "На дно снаряда!D1",
+              "values_ref": "На дно снаряда!D2:D64",
+              "categories_ref": "На дно снаряда!C2:C64",
+              "point_count": 63,
+              "category_count": 63
+            },
+            {
+              "name": "p_30",
+              "title_ref": "На дно снаряда!F1",
+              "values_ref": "На дно снаряда!F2:F69",
+              "categories_ref": "На дно снаряда!E2:E69",
+              "point_count": 68,
+              "category_count": 68
+            },
+            {
+              "name": "p40",
+              "title_ref": "На дно снаряда!H1",
+              "values_ref": "На дно снаряда!H2:H62",
+              "categories_ref": "На дно снаряда!G2:G62",
+              "point_count": 61,
+              "category_count": 61
+            },
+            {
+              "name": "Давление",
+              "title_ref": null,
+              "values_ref": "На дно снаряда!L41:L42",
+              "categories_ref": "На дно снаряда!K41:K42",
+              "point_count": 2,
+              "category_count": 2
+            },
+            {
+              "name": "psd",
+              "title_ref": "На дно снаряда!J29",
+              "values_ref": "На дно снаряда!J30:J62",
+              "categories_ref": "На дно снаряда!I30:I62",
+              "point_count": 33,
+              "category_count": 33
+            }
+          ]
+        },
+        {
+          "chart_index": 13,
+          "name": "На дно снаряда::chart7",
+          "host_sheet": "На дно снаряда",
+          "chart_on_sheet_index": 7,
+          "title": null,
+          "x_axis_title": null,
+          "y_axis_title": null,
+          "chart_types": [
+            "surface",
+            "scatter"
+          ],
+          "series": [
+            {
+              "name": "psd",
+              "title_ref": "На дно снаряда!J29",
+              "values_ref": "На дно снаряда!J30:J62",
+              "categories_ref": "На дно снаряда!I30:I62",
+              "point_count": 33,
+              "category_count": 33
+            }
+          ]
+        }
+      ],
+      "exported_cells": 1242,
+      "numeric_exported": 1221,
+      "sha256_after": "1A7DCDECCCA08B79CF07B6826A8F7182213C852E9CFE2213AC16748CE19868A6",
+      "sha256_unchanged": true
+    }
+  ],
+  "totals": {
+    "cells_exported": 1586,
+    "numeric_values_exported": 1366,
+    "formula_cells_detected": 240,
+    "charts_total": 14,
+    "charts_with_all_series_sources": 14,
+    "series_exported": 25,
+    "series_points_exported": 1286
+  },
+  "previous_report_comparison": {
+    "expected_formula_cells": 240,
+    "observed_formula_cells": 240,
+    "expected_equations_bak": 16,
+    "observed_equations_bak": 16,
+    "expected_charts": 14,
+    "observed_charts": 14,
+    "range_differences": []
+  },
+  "series_metadata": [
+    {
+      "chart_index": 0,
+      "chart_name": "Давление и путь от времени",
+      "host_sheet": "Давления",
+      "series_index": 0,
+      "series_name": "p",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!B2:B64",
+      "categories_ref": "Давления!A2:A64",
+      "title_ref": "Давления!B1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 0,
+      "chart_name": "Давление и путь от времени",
+      "host_sheet": "Давления",
+      "series_index": 1,
+      "series_name": "l",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!C2:C64",
+      "categories_ref": "Давления!A2:A64",
+      "title_ref": "Давления!C1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 1,
+      "chart_name": "Давления::chart1",
+      "host_sheet": "Давления",
+      "series_index": 0,
+      "series_name": "p",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!D2:D64",
+      "categories_ref": "Давления!C2:C64",
+      "title_ref": "Давления!D1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 2,
+      "chart_name": "Давления::chart2",
+      "host_sheet": "Давления",
+      "series_index": 0,
+      "series_name": "p_30",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!F2:F69",
+      "categories_ref": "Давления!E2:E69",
+      "title_ref": "Давления!F1",
+      "point_count_declared": 68,
+      "points_exported": 68,
+      "status": "ok"
+    },
+    {
+      "chart_index": 3,
+      "chart_name": "Кривые давлений",
+      "host_sheet": "Давления",
+      "series_index": 0,
+      "series_name": "p_30",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!F2:F69",
+      "categories_ref": "Давления!E2:E69",
+      "title_ref": "Давления!F1",
+      "point_count_declared": 68,
+      "points_exported": 68,
+      "status": "ok"
+    },
+    {
+      "chart_index": 3,
+      "chart_name": "Кривые давлений",
+      "host_sheet": "Давления",
+      "series_index": 1,
+      "series_name": "p",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!D2:D64",
+      "categories_ref": "Давления!C2:C64",
+      "title_ref": "Давления!D1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 3,
+      "chart_name": "Кривые давлений",
+      "host_sheet": "Давления",
+      "series_index": 2,
+      "series_name": "p40",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!H2:H62",
+      "categories_ref": "Давления!G2:G62",
+      "title_ref": "Давления!H1",
+      "point_count_declared": 61,
+      "points_exported": 61,
+      "status": "ok"
+    },
+    {
+      "chart_index": 4,
+      "chart_name": "Давления::chart4",
+      "host_sheet": "Давления",
+      "series_index": 0,
+      "series_name": "p40",
+      "series_name_source": "seriestext",
+      "values_ref": "Давления!H2:H62",
+      "categories_ref": "Давления!G2:G62",
+      "title_ref": "Давления!H1",
+      "point_count_declared": 61,
+      "points_exported": 61,
+      "status": "ok"
+    },
+    {
+      "chart_index": 5,
+      "chart_name": "Апроксимация::chart0",
+      "host_sheet": "Апроксимация",
+      "series_index": 0,
+      "series_name": "p",
+      "series_name_source": "seriestext",
+      "values_ref": "Апроксимация!B2:B64",
+      "categories_ref": "Апроксимация!A2:A64",
+      "title_ref": "Апроксимация!B1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 5,
+      "chart_name": "Апроксимация::chart0",
+      "host_sheet": "Апроксимация",
+      "series_index": 1,
+      "series_name": "pa",
+      "series_name_source": "header_above_values",
+      "values_ref": "Апроксимация!C2:C64",
+      "categories_ref": "Апроксимация!A2:A64",
+      "title_ref": null,
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 6,
+      "chart_name": "Кривые давлений для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "p",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!D2:D64",
+      "categories_ref": "На дно снаряда!C2:C64",
+      "title_ref": "На дно снаряда!D1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 6,
+      "chart_name": "Кривые давлений для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 1,
+      "series_name": "p_30",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!F2:F69",
+      "categories_ref": "На дно снаряда!E2:E69",
+      "title_ref": "На дно снаряда!F1",
+      "point_count_declared": 68,
+      "points_exported": 68,
+      "status": "ok"
+    },
+    {
+      "chart_index": 6,
+      "chart_name": "Кривые давлений для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 2,
+      "series_name": "p40",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!H2:H62",
+      "categories_ref": "На дно снаряда!G2:G62",
+      "title_ref": "На дно снаряда!H1",
+      "point_count_declared": 61,
+      "points_exported": 61,
+      "status": "ok"
+    },
+    {
+      "chart_index": 6,
+      "chart_name": "Кривые давлений для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 3,
+      "series_name": "Давление",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!L41:L42",
+      "categories_ref": "На дно снаряда!K41:K42",
+      "title_ref": null,
+      "point_count_declared": 2,
+      "points_exported": 2,
+      "status": "ok"
+    },
+    {
+      "chart_index": 7,
+      "chart_name": "На дно снаряда::chart1",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "p_30",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!F2:F69",
+      "categories_ref": "На дно снаряда!E2:E69",
+      "title_ref": "На дно снаряда!F1",
+      "point_count_declared": 68,
+      "points_exported": 68,
+      "status": "ok"
+    },
+    {
+      "chart_index": 8,
+      "chart_name": "На дно снаряда::chart2",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "p40",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!H2:H62",
+      "categories_ref": "На дно снаряда!G2:G62",
+      "title_ref": "На дно снаряда!H1",
+      "point_count_declared": 61,
+      "points_exported": 61,
+      "status": "ok"
+    },
+    {
+      "chart_index": 9,
+      "chart_name": "На дно снаряда::chart3",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "p",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!D2:D64",
+      "categories_ref": "На дно снаряда!C2:C64",
+      "title_ref": "На дно снаряда!D1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 10,
+      "chart_name": "На дно снаряда::chart4",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "На дно снаряда!L38:L39",
+      "series_name_source": "values_ref",
+      "values_ref": "На дно снаряда!L38:L39",
+      "categories_ref": "На дно снаряда!K38:K39",
+      "title_ref": null,
+      "point_count_declared": 2,
+      "points_exported": 2,
+      "status": "ok"
+    },
+    {
+      "chart_index": 11,
+      "chart_name": "На дно снаряда::chart5",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "На дно снаряда!L41:L42",
+      "series_name_source": "values_ref",
+      "values_ref": "На дно снаряда!L41:L42",
+      "categories_ref": "На дно снаряда!K41:K42",
+      "title_ref": null,
+      "point_count_declared": 2,
+      "points_exported": 2,
+      "status": "ok"
+    },
+    {
+      "chart_index": 12,
+      "chart_name": "Для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "p",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!D2:D64",
+      "categories_ref": "На дно снаряда!C2:C64",
+      "title_ref": "На дно снаряда!D1",
+      "point_count_declared": 63,
+      "points_exported": 63,
+      "status": "ok"
+    },
+    {
+      "chart_index": 12,
+      "chart_name": "Для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 1,
+      "series_name": "p_30",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!F2:F69",
+      "categories_ref": "На дно снаряда!E2:E69",
+      "title_ref": "На дно снаряда!F1",
+      "point_count_declared": 68,
+      "points_exported": 68,
+      "status": "ok"
+    },
+    {
+      "chart_index": 12,
+      "chart_name": "Для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 2,
+      "series_name": "p40",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!H2:H62",
+      "categories_ref": "На дно снаряда!G2:G62",
+      "title_ref": "На дно снаряда!H1",
+      "point_count_declared": 61,
+      "points_exported": 61,
+      "status": "ok"
+    },
+    {
+      "chart_index": 12,
+      "chart_name": "Для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 3,
+      "series_name": "Давление",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!L41:L42",
+      "categories_ref": "На дно снаряда!K41:K42",
+      "title_ref": null,
+      "point_count_declared": 2,
+      "points_exported": 2,
+      "status": "ok"
+    },
+    {
+      "chart_index": 12,
+      "chart_name": "Для расчёта на прочность",
+      "host_sheet": "На дно снаряда",
+      "series_index": 4,
+      "series_name": "psd",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!J30:J62",
+      "categories_ref": "На дно снаряда!I30:I62",
+      "title_ref": "На дно снаряда!J29",
+      "point_count_declared": 33,
+      "points_exported": 33,
+      "status": "ok"
+    },
+    {
+      "chart_index": 13,
+      "chart_name": "На дно снаряда::chart7",
+      "host_sheet": "На дно снаряда",
+      "series_index": 0,
+      "series_name": "psd",
+      "series_name_source": "seriestext",
+      "values_ref": "На дно снаряда!J30:J62",
+      "categories_ref": "На дно снаряда!I30:I62",
+      "title_ref": "На дно снаряда!J29",
+      "point_count_declared": 33,
+      "points_exported": 33,
+      "status": "ok"
+    }
+  ],
+  "verification": {
+    "sha256_unchanged": true,
+    "cells_csv_row_order_preserved": true,
+    "series_csv_row_order_preserved": true,
+    "float_roundtrip_mismatches": [],
+    "float_roundtrip_mismatch_count": 0,
+    "utf8_ok": true
+  },
+  "outputs": {
+    "cells_csv": "D:\\go\\ibsolver\\docs\\legacy-reference\\cells.csv",
+    "series_csv": "D:\\go\\ibsolver\\docs\\legacy-reference\\series.csv",
+    "manifest_json": "D:\\go\\ibsolver\\docs\\legacy-reference\\manifest.json",
+    "report_md": "D:\\go\\ibsolver\\docs\\legacy-reference\\REPORT.md"
+  }
+}
