@@ -1,4 +1,4 @@
-const colors = ['#60c5fa', '#f1b75e', '#b49af8', '#6ed6b2', '#ed8598', '#c9d86a'];
+const colors = ['#1736c7', '#ef25d7', '#f2ca36', '#e53935', '#00a7a7', '#5c9f62'];
 const millisecondsPerSecond = 1000;
 
 export const verticalLimit = 1.25;
@@ -16,6 +16,46 @@ export function normalizationDivisor(series) {
 export function seriesPreference(settings, series, index) {
     settings.series ||= {};
     return settings.series[series.id] ||= {visible: settings.visible?.[index] ?? true, scale: settings.scales?.[index] ?? 1};
+}
+
+export function formatAxisValue(value) {
+    if (!Number.isFinite(value)) return '—';
+    const abs = Math.abs(value);
+    if (abs >= 1e6 || (abs > 0 && abs < 1e-3)) {
+        return value.toExponential(2).replace('.', ',').replace(/e([+-]?)(\d+)$/, (_, sign, digits) => `E${sign}${digits.padStart(2, '0')}`);
+    }
+    if (abs >= 100) return value.toFixed(0);
+    if (abs >= 10) return value.toFixed(1).replace('.', ',');
+    return value.toFixed(2).replace('.', ',');
+}
+
+export function chartTitle(series) {
+    const ids = new Set((series || []).map(item => item.id));
+    if ([...ids].some(id => id.startsWith('preparation:'))) {
+        if (ids.has('preparation:p') && ids.has('preparation:l')) return 'Тиск і переміщення від часу';
+        if (ids.has('preparation:p')) return 'Давлення від часу';
+        if (ids.has('preparation:l')) return 'Переміщення від часу';
+        return 'Балістичні часові ряди';
+    }
+    if ([...ids].some(id => id.startsWith('oscillator:'))) return 'Коливання';
+    if ([...ids].some(id => id.startsWith('demo:'))) return 'Демонстраційні криві';
+    return 'Часові ряди';
+}
+
+export function valueRange(series, divisor, scale) {
+    const values = (series.values || []).map(value => value * scale).filter(Number.isFinite);
+    if (!values.length) return [0, 1];
+    let min = Math.min(0, ...values);
+    let max = Math.max(0, ...values);
+    if (max === min) max = min + 1;
+    if (min >= 0) {
+        max *= 1.05;
+    } else {
+        const span = max - min;
+        min -= span * 0.05;
+        max += span * 0.05;
+    }
+    return [min, max];
 }
 
 // This component only consumes numeric series and display preferences.
@@ -60,7 +100,7 @@ export class TimeSeriesChart {
     fraction(event) {
         const rect = this.canvas.getBoundingClientRect();
         const x = event.clientX - rect.left, y = event.clientY - rect.top;
-        return x < 54 || x > rect.width - 22 || y < 22 || y > rect.height - 44 ? null : (x - 54) / Math.max(1, rect.width - 76);
+        return x < 68 || x > rect.width - 22 || y < 42 || y > rect.height - 44 ? null : (x - 68) / Math.max(1, rect.width - 90);
     }
 
     requestDraw() {
@@ -110,18 +150,49 @@ export class TimeSeriesChart {
         if (canvas.width !== Math.round(w * ratio)) canvas.width = Math.round(w * ratio);
         if (canvas.height !== Math.round(h * ratio)) canvas.height = Math.round(h * ratio);
         c.setTransform(ratio, 0, 0, ratio, 0, 0);
-        c.fillStyle = '#131b26'; c.fillRect(0, 0, w, h);
+        c.fillStyle = '#f7f8fa'; c.fillRect(0, 0, w, h);
         if (!data) {
             this.cursor.textContent = '';
             return;
         }
-        const left = 54, top = 22, pw = Math.max(1, w - 76), ph = Math.max(1, h - 66);
-        c.font = '11px Consolas, monospace';
+        const left = 68, top = 42, pw = Math.max(1, w - 90), ph = Math.max(1, h - 86);
+        const visible = data.series.map((series, index) => ({series, index, preference: seriesPreference(settings, series, index)})).filter(item => item.preference.visible);
+        const units = [];
+        visible.forEach(item => {
+            if (!units.includes(item.series.unit)) units.push(item.series.unit);
+        });
+        if (!units.length) units.push('Нормоване значення');
+        const ranges = visible.length ? units.map(unit => {
+            const items = visible.filter(item => item.series.unit === unit);
+            let min = 0, max = 0;
+            items.forEach(item => {
+                const range = valueRange(item.series, this.divisors[item.index], item.preference.scale);
+                min = Math.min(min, range[0]);
+                max = Math.max(max, range[1]);
+            });
+            return [min, max];
+        }) : [[0,1]];
+        c.font = '11px Segoe UI, sans-serif';
+        c.fillStyle = '#111827'; c.textAlign = 'center';
+        c.font = '600 16px Segoe UI, sans-serif';
+        c.fillText(chartTitle(visible.map(item => item.series)), left + pw / 2, 24);
+        c.font = '11px Segoe UI, sans-serif';
         const ticks = ph < 80 ? 2 : 5;
+        const yLabel = !visible.length ? 'Нормоване значення' : units.length === 1 ? `${visible[0].series.name.replace(/^[^ ]+ /, '')}, ${units[0]}` : `${units[0]} / ${units.slice(1).join(' / ')}`;
+        const primaryRange = ranges[0];
+        const secondaryRange = ranges[1];
         for (let i = 0; i <= ticks; i++) {
             const y = top + i * ph / ticks;
-            c.strokeStyle = '#283446'; c.beginPath(); c.moveTo(left, y); c.lineTo(left + pw, y); c.stroke();
-            c.fillStyle = '#91a0b3'; c.textAlign = 'right'; c.fillText((verticalLimit * (1 - i / ticks)).toFixed(2), left - 10, y + 4);
+            c.strokeStyle = '#697386'; c.lineWidth = i === ticks ? 1.5 : 1;
+            c.beginPath(); c.moveTo(left, y); c.lineTo(left + pw, y); c.stroke();
+            c.fillStyle = '#111827'; c.textAlign = 'right';
+            const value = primaryRange[1] - (primaryRange[1] - primaryRange[0]) * i / ticks;
+            c.fillText(formatAxisValue(value), left - 10, y + 4);
+            if (secondaryRange) {
+                c.textAlign = 'left';
+                const secondaryValue = secondaryRange[1] - (secondaryRange[1] - secondaryRange[0]) * i / ticks;
+                c.fillText(formatAxisValue(secondaryValue), left + pw + 10, y + 4);
+            }
         }
         const times = data.time;
         const [min, max] = this.range;
@@ -129,26 +200,40 @@ export class TimeSeriesChart {
         const first = Math.max(0, nearestIndex(times, min) - 1), last = Math.min(times.length - 1, nearestIndex(times, max) + 1);
         for (let i = 0; i <= 5; i++) {
             const x = left + pw * i / 5;
-            c.strokeStyle = '#283446'; c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke();
-            c.fillStyle = '#91a0b3'; c.textAlign = 'center';
+            c.strokeStyle = '#697386'; c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke();
+            c.fillStyle = '#111827'; c.textAlign = 'center';
             const tickTime = min + (max - min) * i / 5;
-            c.fillText((tickTime * millisecondsPerSecond).toPrecision(5), x, top + ph + 21);
+            c.fillText(formatAxisValue(tickTime * millisecondsPerSecond), x, top + ph + 21);
         }
+        c.fillStyle = '#111827'; c.textAlign = 'center'; c.font = '600 12px Segoe UI, sans-serif';
         c.fillText('Час, мс', left + pw / 2, h - 7);
+        c.save(); c.translate(13, top + ph / 2); c.rotate(-Math.PI / 2);
+        c.fillText(yLabel, 0, 0); c.restore();
+        if (units.length > 1) {
+            c.save(); c.translate(w - 7, top + ph / 2); c.rotate(-Math.PI / 2);
+            c.fillStyle = '#111827'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'center';
+            c.fillText(units[1], 0, 0); c.restore();
+            c.fillStyle = '#111827'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'right';
+            c.fillText(units[0], left - 10, top - 10);
+        }
+        c.strokeStyle = '#111827'; c.lineWidth = 1.5;
+        c.strokeRect(left, top, pw, ph);
         c.save(); c.beginPath(); c.rect(left, top, pw, ph); c.clip();
         data.series.forEach((s, j) => {
             const preference = seriesPreference(settings, s, j);
             if (!preference.visible) return;
             c.strokeStyle = colors[j]; c.lineWidth = 1.5; c.beginPath();
+            const axis = units.indexOf(s.unit);
+            const range = ranges[Math.max(0, axis)];
             for (let i = first; i <= last; i++) {
                 const value = s.values[i];
-                const normalised = Math.max(-verticalLimit * 1e9, Math.min(verticalLimit * 1e9, value / this.divisors[j] * preference.scale));
-                const y = top + ph * (1 - normalised / verticalLimit);
+                const scaled = value * preference.scale;
+                const y = top + ph * (1 - (scaled - range[0]) / (range[1] - range[0]));
                 if (i === first) c.moveTo(xAt(i), y); else c.lineTo(xAt(i), y);
             } c.stroke();
         });
         if (this.index !== null) {
-            const x = xAt(this.index); c.strokeStyle = '#c5d0df'; c.setLineDash([4, 4]);
+            const x = xAt(this.index); c.strokeStyle = '#111827'; c.setLineDash([4, 4]);
             c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke(); c.setLineDash([]);
         }
         c.restore();

@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 
 // Import the browser module without adding a package-wide module convention.
 const source = await readFile(new URL('./chart.js', import.meta.url), 'utf8');
-const {normalizationDivisor, seriesPreference, verticalLimit, nearestIndex, zoomRange, clampRange, TimeSeriesChart} = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const {normalizationDivisor, seriesPreference, verticalLimit, formatAxisValue, chartTitle, valueRange, nearestIndex, zoomRange, clampRange, TimeSeriesChart} = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 
 test('automatic normalization handles zero, negative and constant series', () => {
     for (const [values, expected] of [[[0,0],1],[[-3,-3],3],[[2,2],2],[[-7,2],7]]) {
@@ -21,6 +21,22 @@ test('reference normalization never follows the actual maximum', () => {
     assert.equal(normalizationDivisor({values:[2],reference:null}),2);
     for (const reference of [0,-2,NaN,Infinity,-Infinity]) assert.throws(() => normalizationDivisor({values:[1],reference}));
 });
+
+test('Excel-style axis labels and titles use series identities', () => {
+    assert.equal(formatAxisValue(300000000), '3,00E+08');
+    assert.equal(formatAxisValue(0), '0,00');
+    assert.equal(formatAxisValue(2.5), '2,50');
+    assert.equal(chartTitle([{id:'preparation:p'}, {id:'preparation:l'}]), 'Тиск і переміщення від часу');
+    assert.equal(chartTitle([{id:'oscillator:position'}]), 'Коливання');
+});
+
+test('different units calculate independent positive chart ranges', () => {
+    assert.deepEqual(valueRange({values:[0,100,250]}, 250, 1), [0,262.5]);
+    const travelRange = valueRange({values:[0,.01,.016]}, .016, 1);
+    assert.equal(travelRange[0], 0);
+    assert(Math.abs(travelRange[1] - .0168) < 1e-12);
+});
+
 test('preferences follow IDs and preserve all-hidden legacy settings', () => {
     const settings = {visible:[false,true],scales:[2,3]};
     const a = {id:'a'}, b = {id:'b'};
@@ -48,7 +64,7 @@ test('cursor zoom, pan limits and reset range on nonuniform times', () => {
     for (const [clientX,clientY] of [[0,50],[100,0],[799,50],[100,399]]) {
         assert.equal(TimeSeriesChart.prototype.fraction.call(target,{clientX,clientY}),null);
     }
-    assert.equal(TimeSeriesChart.prototype.fraction.call(target,{clientX:416,clientY:100}),.5);
+    assert.equal(TimeSeriesChart.prototype.fraction.call(target,{clientX:423,clientY:100}),.5);
 });
 
 test('wheel cursor follows the actual range when zoom-out reaches a data boundary', t => {

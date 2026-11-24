@@ -73,3 +73,4 @@
 | 2026-11-23 | legacy-ref-1 | Архівне читання `Бак.xls` / `Бакалаврская.xls` → `docs/legacy-reference/` (cells/series/manifest/REPORT); ядро IBSolver не змінювалось | SHA-256 оригіналів ✅, CSV round-trip ✅ |
 | 2026-11-23 | — | Зафіксовано висоту панелі курсора. Часову вісь і показник часу під курсором переведено в мілісекунди | go test ./... ✅, npm test ✅, Wails build ✅, наведення у WebView2 ✅ |
 | 2026-11-23 | legacy-ref-2 | Автономний `docs/legacy-reference/viewer.html` (+ `build_viewer.py`): 14 діаграм / 25 серій / 1286 точок, Canvas, file:// | CSV↔embed ✅, Edge file:// ✅, UI 1280×800/800×560 ✅; CSV/manifest/ядро незмінні |
+| 2026-11-23 | — | Наближення Canvas-графіка до Excel-візуалізації: світла область, чіткі осі й сітка, заголовки, одиниці та кольорові криві; окремі осі Y для серій із різними одиницями | go test ./... ✅, npm test ✅ |
