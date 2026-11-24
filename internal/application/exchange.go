@@ -125,7 +125,9 @@ func completeConfigurationJSON(data []byte) error {
 			if err := json.Unmarshal(raw, &fields); err != nil {
 				return err
 			}
-			for _, key := range []string{"d", "q", "vd", "lc", "ns", "f1", "af"} {
+			for _, key := range []string{
+				"d", "q", "vd", "lc", "ns", "f1", "af",
+			} {
 				if len(fields[key]) == 0 {
 					return fmt.Errorf("Відсутній параметр: %s", key)
 				}
@@ -183,7 +185,76 @@ func (s *Service) ExportCSV(id int64) ([]byte, error) {
 	if state.Active.ID != id || state.Run == nil {
 		return nil, fmt.Errorf("Немає збереженого запуску для експорту")
 	}
-	return exportChartCSV(state.Run.Chart)
+	return exportRunCSV(*state.Run)
+}
+
+func exportRunCSV(run domain.Run) ([]byte, error) {
+	if run.Mode != domain.ModePreparation {
+		return exportChartCSV(run.Chart)
+	}
+	return exportBallisticsCSV(run.Chart)
+}
+
+func exportBallisticsCSV(d domain.ChartData) ([]byte, error) {
+	if err := d.Validate(); err != nil {
+		return nil, err
+	}
+	// Column order, units and numeric formats follow the legacy BAS export,
+	// e.g. D:\go\ibsolver-refs\2A65.CSV. Stored pressure is MPa, exported in Pa.
+	ordered := []struct {
+		id     string
+		header string
+		scale  float64
+		format string
+	}{
+		{domain.SeriesID(domain.ModePreparation, 0), "P_Pa", 1e6, "%.1f"},
+		{domain.SeriesID(domain.ModePreparation, 1), "T_K", 1, "%.1f"},
+		{domain.SeriesID(domain.ModePreparation, 6), "E_mm", 1, "%.9f"},
+		{domain.SeriesID(domain.ModePreparation, 7), "Z", 1, "%.9f"},
+		{domain.SeriesID(domain.ModePreparation, 4), "PSI", 1, "%.9f"},
+		{domain.SeriesID(domain.ModePreparation, 2), "V_m_s", 1, "%.4f"},
+		{domain.SeriesID(domain.ModePreparation, 3), "L_m", 1, "%.5f"},
+		{domain.SeriesID(domain.ModePreparation, 5), "G_kg_s", 1, "%.4f"},
+	}
+	seriesByID := make(map[string]domain.Series, len(d.Series)+len(d.Aux))
+	for _, series := range d.Series {
+		seriesByID[series.ID] = series
+	}
+	for _, series := range d.Aux {
+		seriesByID[series.ID] = series
+	}
+	var output bytes.Buffer
+	writer := csv.NewWriter(&output)
+	header := make([]string, len(ordered)+1)
+	header[0] = "t_ms"
+	series := make([]domain.Series, len(ordered))
+	for i, item := range ordered {
+		value, ok := seriesByID[item.id]
+		if !ok {
+			return nil, fmt.Errorf("Відсутній балістичний ряд для CSV: %s; виконайте розрахунок", item.id)
+		}
+		header[i+1] = item.header
+		series[i] = value
+	}
+	if err := writer.Write(header); err != nil {
+		return nil, err
+	}
+	row := make([]string, len(header))
+	for i, time := range d.Time {
+		timeMS := time * 1000
+		if math.IsNaN(timeMS) || math.IsInf(timeMS, 0) {
+			return nil, fmt.Errorf("Час поза діапазоном мілісекунд у рядку %d", i+2)
+		}
+		row[0] = fmt.Sprintf("%.6f", timeMS)
+		for j, item := range ordered {
+			row[j+1] = fmt.Sprintf(item.format, series[j].Values[i]*item.scale)
+		}
+		if err := writer.Write(row); err != nil {
+			return nil, err
+		}
+	}
+	writer.Flush()
+	return output.Bytes(), writer.Error()
 }
 
 func exportChartCSV(d domain.ChartData) ([]byte, error) {
@@ -222,10 +293,18 @@ func ReadSeriesCSV(data []byte) (domain.ChartData, error) {
 	}
 	reader := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(data), "\ufeff")))
 	header, err := reader.Read()
-	if err != nil || len(header) < 2 || len(header) > 7 || (header[0] != "Час [с]" && header[0] != "time [s]") {
-		return chart, fmt.Errorf("CSV: перший стовпець «time [s]» або «Час [с]», далі 1–6 рядів «Назва [одиниця]»; роздільник — кома")
+	if err != nil || len(header) < 2 || len(header) > 7 || (header[0] != "Час [с]" && header[0] != "time [s]" && header[0] != "t [ms]") {
+		return chart, fmt.Errorf("CSV: перший стовпець «time [s]», «Час [с]» або «t [ms]», далі 1–6 рядів «Назва [одиниця]»; роздільник — кома")
+	}
+	timeScale := 1.0
+	if header[0] == "t [ms]" {
+		timeScale = 0.001
 	}
 	for i, label := range header[1:] {
+		if label == "PSI" {
+			chart.Series = append(chart.Series, domain.Series{ID: fmt.Sprintf("csv-%d", i), Name: "PSI"})
+			continue
+		}
 		end := strings.LastIndex(label, " [")
 		if end < 1 || !strings.HasSuffix(label, "]") {
 			return chart, fmt.Errorf("CSV: вкажіть назву та одиницю кожного ряду")
@@ -249,6 +328,11 @@ func ReadSeriesCSV(data []byte) (domain.ChartData, error) {
 				return chart, fmt.Errorf("CSV: некоректне число, рядок %d, стовпець %d", rowIndex, column+1)
 			}
 			if column == 0 {
+				rawTime := n
+				n *= timeScale
+				if math.IsNaN(n) || math.IsInf(n, 0) || (rawTime != 0 && n == 0) {
+					return chart, fmt.Errorf("CSV: час поза діапазоном секунд, рядок %d", rowIndex)
+				}
 				chart.Time = append(chart.Time, n)
 			} else {
 				chart.Series[column-1].Values = append(chart.Series[column-1].Values, n)

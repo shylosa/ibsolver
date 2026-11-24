@@ -2,7 +2,7 @@ import './style.css';
 import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV} from '../wailsjs/go/main/App';
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {preparationFields, parsePreparation, displayPreparation} from './preparation.mjs';
+import {preparationFields, formaOptions, parsePreparation, displayPreparation} from './preparation.mjs';
 import {externalMetadata} from './external.mjs';
 import {DebouncedTask} from './debounce.mjs';
 
@@ -19,9 +19,14 @@ document.querySelector('#app').innerHTML = `
         <label>Режим<select id="mode"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option><option value="demo">DEMO · інтерфейс</option></select></label>
         <label class="name-field">Назва<input id="name" maxlength="120" required></label><button id="new">Нова</button>
         <button id="import-json">Імпорт JSON</button><button id="export-json">Експорт JSON</button><span id="save-state" role="status"></span></div>
-    <form id="inputs" novalidate><div id="preparation-fields">
-        <div id="preparation-main" class="preparation-grid"></div>
-        <details id="coefficients"><summary>Вибрані коефіцієнти · одиниці не встановлено</summary><div id="preparation-coefficients" class="preparation-grid coefficients"></div></details>
+    <form id="inputs" novalidate>    <div id="preparation-fields">
+        <div id="preparation-main" class="preparation-grid">
+            <section class="preparation-column"><h3>Лімітні параметри</h3><div class="preparation-column-fields"></div></section>
+            <section class="preparation-column"><h3>Характеристики ствола</h3><div class="preparation-column-fields"></div></section>
+            <section class="preparation-column"><h3>Характеристики заряду</h3><div class="preparation-column-fields"></div></section>
+            <section class="preparation-column"><h3>Характеристики пороху</h3><div class="preparation-column-fields"></div></section>
+            <section class="preparation-column"><h3>Характеристики воспламенителя</h3><div class="preparation-column-fields"></div></section>
+        </div>
         </div><div id="oscillator-fields"><div class="numerical-fields">
         <label>Маса m, кг<input id="n-mass" type="number" min="1e-12" step="any" required></label>
         <label>Жорсткість k, Н/м<input id="n-stiffness" type="number" min="1e-12" step="any" required></label>
@@ -47,7 +52,7 @@ document.querySelector('#app').innerHTML = `
         </div><p class="hint">DEMO: математичні криві для перевірки інтерфейсу, не фізичний розрахунок.</p></div>
     <div class="actions"><button id="save" type="submit" disabled>Зберегти</button><button id="calculate" type="button" class="primary">Розрахувати</button>
         <button id="demo" type="button" class="primary" hidden>Створити DEMO</button><button id="cancel" type="button" disabled>Скасувати</button>
-        <span class="preparation-note">Всі вхідні дані зберігаються в SI. d вводиться в мм.</span></div></form>
+        </div></form>
 </section>
 <main><aside id="results"><div class="section-title">Результати <span id="result-kind" class="badge">RK45</span></div>
     <label class="history">Зовнішні результати<select id="external-results" aria-label="Збережені зовнішні результати"></select></label><div class="history-actions"><button id="external-metadata">Метадані</button><button id="external-delete">Видалити…</button></div>
@@ -61,14 +66,23 @@ document.querySelector('#app').innerHTML = `
 <footer><span id="status" role="status">Відкриття бази даних…</span><span>SQLite · локальне збереження</span></footer>`;
 
 const $ = id => document.getElementById(id);
+const preparationGroups = {
+    pmax: 0, vd: 0,
+    d: 1, q: 1, ns: 1, hi: 1, af: 1, pfor: 1, lc: 1,
+    kt: 2, tn: 2, forma: 2, omega: 2, w0: 2,
+    ro: 3, tg15: 3, ku1: 3, f1: 3, u15: 3, svod: 3,
+    pvos: 4, tvos: 4,
+};
 for (const [key, label, unit] of preparationFields) {
     const element = document.createElement('label');
     element.className = unit ? '' : 'unknown-unit';
     const title = unit ? `${label}, ${unit}` : label;
-    element.innerHTML = `<span class="field-title"><span class="field-name">${title}</span></span><input id="p-${key}" type="text" inputmode="decimal" placeholder="Не задано" aria-describedby="p-${key}-message"><span id="p-${key}-message" class="field-message"></span>`;
-    $(unit ? 'preparation-main' : 'preparation-coefficients').append(element);
+    const control = key === 'forma'
+        ? `<select id="p-${key}" aria-describedby="p-${key}-message"><option value="">Не задано</option>${formaOptions.map(([value, name]) => `<option value="${value}">${value} - ${name}</option>`).join('')}</select>`
+        : `<input id="p-${key}" type="text" inputmode="decimal" placeholder="Не задано" aria-describedby="p-${key}-message">`;
+    element.innerHTML = `<span class="field-title"><span class="field-name">${title}</span></span>${control}<span id="p-${key}-message" class="field-message"></span>`;
+    document.querySelectorAll('#preparation-main .preparation-column-fields')[preparationGroups[key]].append(element);
 }
-$('p-d').closest('label').insertAdjacentHTML('beforeend', '<details class="field-help"><summary>Про одиниці d (мм → м)</summary>Введення в мм; збереження в метрах (мм / 1000).</details>');
 let state, busy = false, dirty = false, revision = 0;
 let draftQueue = Promise.resolve(), externalChart = null;
 const delayedSave = new DebouncedTask(() => autosave(), 450);
@@ -129,16 +143,18 @@ function readConfiguration() {
             return [key, value];
         }));
     } else if (mode === 'preparation') {
-        const values = {}, errors = [];
+        const values = {}, inputFormats = {}, errors = [];
         for (const [key] of preparationFields) {
-            try { values[key] = readPreparationField(key); } catch (error) { errors.push([key, error]); }
+            try {
+                values[key] = readPreparationField(key);
+                inputFormats[key] = $('p-' + key).value;
+            } catch (error) { errors.push([key, error]); }
         }
         if (errors.length) {
-            const [key, error] = errors[0];
-            if (['ns', 'f1', 'af'].includes(key)) $('coefficients').open = true;
+            const [, error] = errors[0];
             throw error;
         }
-        parameters.preparation = values;
+        parameters.preparation = {...values, inputFormats};
     } else {
         const numerical = parameters.oscillator;
         for (const [group, prefix] of [['model', 'n-'], ['solver', 's-']]) {
@@ -216,7 +232,8 @@ function display(next) {
         for (const [key, value] of Object.entries(state.active.parameters.oscillator?.[group] || {})) $(prefix + key).value = value;
     }
     for (const [key] of preparationFields) {
-        $('p-' + key).value = displayPreparation(state.active.parameters.preparation?.[key], key);
+        const preparation = state.active.parameters.preparation;
+        $('p-' + key).value = displayPreparation(preparation?.[key], key, preparation?.inputFormats?.[key]);
         try { readPreparationField(key); } catch {}
     }
     $('save-state').textContent = 'Збережено';

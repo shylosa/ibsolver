@@ -102,6 +102,9 @@ type Series struct {
 type ChartData struct {
 	Time   []float64 `json:"time"`
 	Series []Series  `json:"series"`
+	// Aux holds non-displayed numeric columns of a run, such as the ballistics
+	// burnt-layer series, exported to CSV but kept out of the charted series.
+	Aux []Series `json:"aux,omitempty"`
 }
 
 func (d ChartData) Validate() error {
@@ -114,7 +117,14 @@ func (d ChartData) Validate() error {
 		}
 	}
 	ids := make(map[string]bool)
-	for _, s := range d.Series {
+	if err := validateSeries(d.Time, d.Series, ids); err != nil {
+		return err
+	}
+	return validateSeries(d.Time, d.Aux, ids)
+}
+
+func validateSeries(time []float64, series []Series, ids map[string]bool) error {
+	for _, s := range series {
 		if s.ID == "" || ids[s.ID] {
 			return fmt.Errorf("Невірний ідентифікатор серії")
 		}
@@ -122,7 +132,7 @@ func (d ChartData) Validate() error {
 		if s.Reference != nil && (math.IsNaN(*s.Reference) || math.IsInf(*s.Reference, 0) || *s.Reference <= 0) {
 			return fmt.Errorf("Опорне значення серії має бути скінченним і додатним")
 		}
-		if s.Name == "" || len(s.Values) != len(d.Time) {
+		if s.Name == "" || len(s.Values) != len(time) {
 			return fmt.Errorf("Невірна серія")
 		}
 		for _, n := range s.Values {

@@ -71,6 +71,20 @@ func TestSeriesReferencesAndIdentity(t *testing.T) {
 	if err := chart.Validate(); err == nil {
 		t.Fatal("accepted duplicate ID")
 	}
+	chart.Series = chart.Series[:1]
+	chart.Aux = []Series{{ID: "aux-e", Name: "E", Values: []float64{0, 1}}}
+	if err := chart.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	chart.Aux[0].Values = []float64{0}
+	if err := chart.Validate(); err == nil {
+		t.Fatal("accepted aux series shorter than time")
+	}
+	chart.Aux[0].Values = []float64{0, 1}
+	chart.Aux[0].ID = "signal"
+	if err := chart.Validate(); err == nil {
+		t.Fatal("accepted aux ID colliding with a series")
+	}
 }
 
 func TestSeriesPreferencesFollowIdentity(t *testing.T) {

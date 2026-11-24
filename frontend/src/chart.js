@@ -1,4 +1,4 @@
-const colors = ['#1736c7', '#ef25d7', '#f2ca36', '#e53935', '#00a7a7', '#5c9f62'];
+const colors = ['#60a5fa', '#f472b6', '#facc15', '#fb7185', '#2dd4bf', '#a3e635'];
 const millisecondsPerSecond = 1000;
 
 export const verticalLimit = 1.25;
@@ -65,14 +65,6 @@ export class TimeSeriesChart {
         this.context = canvas.getContext('2d');
         this.observer = new ResizeObserver(() => this.draw());
         this.observer.observe(canvas);
-        canvas.addEventListener('wheel', event => {
-            const fraction = this.fraction(event);
-            if (fraction === null || !this.data) return;
-            event.preventDefault();
-            this.range = zoomRange(this.data.time, this.range, fraction, Math.exp(Math.max(-2, Math.min(2, event.deltaY * .002))));
-            this.index = nearestIndex(this.data.time, this.range[0] + fraction * (this.range[1] - this.range[0]));
-            this.requestDraw();
-        }, {passive: false});
         canvas.addEventListener('pointerdown', event => {
             if (event.button !== 0 || !this.data || this.fraction(event) === null) return;
             event.preventDefault();
@@ -150,7 +142,7 @@ export class TimeSeriesChart {
         if (canvas.width !== Math.round(w * ratio)) canvas.width = Math.round(w * ratio);
         if (canvas.height !== Math.round(h * ratio)) canvas.height = Math.round(h * ratio);
         c.setTransform(ratio, 0, 0, ratio, 0, 0);
-        c.fillStyle = '#f7f8fa'; c.fillRect(0, 0, w, h);
+        c.fillStyle = '#151d29'; c.fillRect(0, 0, w, h);
         if (!data) {
             this.cursor.textContent = '';
             return;
@@ -173,7 +165,7 @@ export class TimeSeriesChart {
             return [min, max];
         }) : [[0,1]];
         c.font = '11px Segoe UI, sans-serif';
-        c.fillStyle = '#111827'; c.textAlign = 'center';
+        c.fillStyle = '#e5edf7'; c.textAlign = 'center';
         c.font = '600 16px Segoe UI, sans-serif';
         c.fillText(chartTitle(visible.map(item => item.series)), left + pw / 2, 24);
         c.font = '11px Segoe UI, sans-serif';
@@ -183,9 +175,9 @@ export class TimeSeriesChart {
         const secondaryRange = ranges[1];
         for (let i = 0; i <= ticks; i++) {
             const y = top + i * ph / ticks;
-            c.strokeStyle = '#697386'; c.lineWidth = i === ticks ? 1.5 : 1;
+            c.strokeStyle = i === ticks ? '#718096' : '#354458'; c.lineWidth = i === ticks ? 1.5 : 1;
             c.beginPath(); c.moveTo(left, y); c.lineTo(left + pw, y); c.stroke();
-            c.fillStyle = '#111827'; c.textAlign = 'right';
+            c.fillStyle = '#b7c5d6'; c.textAlign = 'right';
             const value = primaryRange[1] - (primaryRange[1] - primaryRange[0]) * i / ticks;
             c.fillText(formatAxisValue(value), left - 10, y + 4);
             if (secondaryRange) {
@@ -200,23 +192,23 @@ export class TimeSeriesChart {
         const first = Math.max(0, nearestIndex(times, min) - 1), last = Math.min(times.length - 1, nearestIndex(times, max) + 1);
         for (let i = 0; i <= 5; i++) {
             const x = left + pw * i / 5;
-            c.strokeStyle = '#697386'; c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke();
-            c.fillStyle = '#111827'; c.textAlign = 'center';
+            c.strokeStyle = '#354458'; c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke();
+            c.fillStyle = '#b7c5d6'; c.textAlign = 'center';
             const tickTime = min + (max - min) * i / 5;
             c.fillText(formatAxisValue(tickTime * millisecondsPerSecond), x, top + ph + 21);
         }
-        c.fillStyle = '#111827'; c.textAlign = 'center'; c.font = '600 12px Segoe UI, sans-serif';
+        c.fillStyle = '#dce5ef'; c.textAlign = 'center'; c.font = '600 12px Segoe UI, sans-serif';
         c.fillText('Час, мс', left + pw / 2, h - 7);
         c.save(); c.translate(13, top + ph / 2); c.rotate(-Math.PI / 2);
         c.fillText(yLabel, 0, 0); c.restore();
         if (units.length > 1) {
             c.save(); c.translate(w - 7, top + ph / 2); c.rotate(-Math.PI / 2);
-            c.fillStyle = '#111827'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'center';
+            c.fillStyle = '#dce5ef'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'center';
             c.fillText(units[1], 0, 0); c.restore();
-            c.fillStyle = '#111827'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'right';
+            c.fillStyle = '#dce5ef'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'right';
             c.fillText(units[0], left - 10, top - 10);
         }
-        c.strokeStyle = '#111827'; c.lineWidth = 1.5;
+        c.strokeStyle = '#9aa9bb'; c.lineWidth = 1.5;
         c.strokeRect(left, top, pw, ph);
         c.save(); c.beginPath(); c.rect(left, top, pw, ph); c.clip();
         data.series.forEach((s, j) => {
@@ -233,7 +225,7 @@ export class TimeSeriesChart {
             } c.stroke();
         });
         if (this.index !== null) {
-            const x = xAt(this.index); c.strokeStyle = '#111827'; c.setLineDash([4, 4]);
+            const x = xAt(this.index); c.strokeStyle = '#e5edf7'; c.setLineDash([4, 4]);
             c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke(); c.setLineDash([]);
         }
         c.restore();
@@ -266,7 +258,3 @@ export function clampRange(times, start, span) {
     return [start, start + span];
 }
 
-export function zoomRange(times, range, fraction, factor) {
-    const span = Math.min(times.at(-1) - times[0], Math.max((times.at(-1) - times[0]) / 1000, (range[1] - range[0]) * factor));
-    return clampRange(times, range[0] + fraction * (range[1] - range[0]) - fraction * span, span);
-}

@@ -18,85 +18,99 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 	}
 
 	// 1. Resolve inputs with historical OZVB-3A defaults
-	d := 0.027 // 27 mm calibre in metres
+	pmax := 270e6
+	d := 0.1524
+	q := 43.6
+	vdz := 810.0
+	ls := 6.275
+	ns := 0.82
+	hi := 1.285
+	afi := 1.06
+	pfor := 25e6
+	kt := 1.8e-3
+	tn := 15.0
+	omega := 11.64
+	w0 := 0.0171
+	ro := 1620.0
+	tg15 := 2700.0
+	ku1 := 0.0
+	f15 := 1e6
+	u15 := 0.65e-9
+	svod := 0.0012
+	pvos := 10e6
+	tvos := 1600.0
+
+	if input.Pmax != nil && *input.Pmax > 0 {
+		pmax = *input.Pmax
+	}
 	if input.D != nil && *input.D > 0 {
 		d = *input.D
 		if d > 1.0 { // safety: if accidentally given in mm
 			d = d / 1000.0
 		}
 	}
-
-	q := 0.25 // bullet mass, kg
 	if input.Q != nil && *input.Q > 0 {
 		q = *input.Q
 	}
-
-	vdz := 920.0 // target muzzle velocity, m/s
 	if input.Vd != nil && *input.Vd > 0 {
 		vdz = *input.Vd
 	}
-
-	ls := 1.451 // barrel length, m
 	if input.Lc != nil && *input.Lc > 0 {
 		ls = *input.Lc
 	}
-
-	ns := 0.82 // rifling factor
 	if input.Ns != nil && *input.Ns > 0 {
 		ns = *input.Ns
 	}
-
-	f15 := 0.92e6 // powder force F15, J/kg
 	if input.F1 != nil && *input.F1 > 0 {
 		f15 = *input.F1
 		if f15 < 100.0 { // entered as MJ/kg
 			f15 = f15 * 1e6
 		}
 	}
-
-	afi := 1.03 // fictitious mass coefficient base
 	if input.Af != nil && *input.Af > 0 {
 		afi = *input.Af
 	}
-
-	// 2. Derive charge and geometry parameters
-	isBase27mm := math.Abs(d-0.027) < 1e-4 && math.Abs(q-0.25) < 1e-3
-	var omega, w0, svodMM, hi, pfor, ro, tg15, u15 float64
-	pvos := 5e6
-	tvos := 1600.0
-	ro = 1600.0
-	tg15 = 2700.0
-	u15 = 0.65e-9
-	hi = 1.55
-	pfor = 40e6
-
-	if isBase27mm {
-		omega = 0.09
-		w0 = 0.000125
-		svodMM = 0.5
-	} else {
-		// General ballistic scaling
-		ed := 0.5 * q * vdz * vdz
-		omega = ed / 1.175e6
-		delta := 720.0
-		w0 = omega / delta
-		sArea := ns * d * d
-		l0Est := w0 / sArea
-		lkamEst := l0Est / hi
-		ldEst := ls - lkamEst
-		if ldEst <= 0 {
-			ldEst = ls * 0.8
-			lkamEst = ls - ldEst
-			l0Est = lkamEst * hi
-			w0 = l0Est * sArea
-		}
-		ladEst := ldEst / l0Est
-		c4Est := omega / q / 3.0
-		fiEst := afi + c4Est*(ladEst+1.0/hi)/(ladEst+1.0)
-		e1Est := fiEst * q * vdz * u15 / sArea
-		svodMM = e1Est * 2000.0 * 0.95
+	if input.Pfor != nil && *input.Pfor > 0 {
+		pfor = *input.Pfor
+	}
+	if input.Hi != nil && *input.Hi > 0 {
+		hi = *input.Hi
+	}
+	if input.Kt != nil && *input.Kt > 0 {
+		kt = *input.Kt
+	}
+	if input.Tn != nil {
+		tn = *input.Tn
+	}
+	if input.Omega != nil && *input.Omega > 0 {
+		omega = *input.Omega
+	}
+	if input.W0 != nil && *input.W0 > 0 {
+		w0 = *input.W0
+	}
+	if input.Ro != nil && *input.Ro > 0 {
+		ro = *input.Ro
+	}
+	if input.Tg15 != nil && *input.Tg15 > 0 {
+		tg15 = *input.Tg15
+	}
+	if input.Ku1 != nil {
+		ku1 = *input.Ku1
+	}
+	if input.U15 != nil && *input.U15 > 0 {
+		u15 = *input.U15
+	}
+	if input.Svod != nil && *input.Svod > 0 {
+		svod = *input.Svod
+	}
+	if input.Pvos != nil && *input.Pvos > 0 {
+		pvos = *input.Pvos
+	}
+	if input.Tvos != nil && *input.Tvos > 0 {
+		tvos = *input.Tvos
 	}
 
+	// 2. Derive charge and geometry parameters
 	s := ns * d * d
 	l0 := w0 / s
 	lkam := l0 / hi
@@ -106,29 +120,56 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 		lkam = ls - ld
 	}
 	lad := ld / l0
-	svod := (svodMM / 2.0) / 1000.0 // half-web e1 in metres
+	forma := 6
+	if input.Forma != nil && *input.Forma >= 1 && *input.Forma <= 7 {
+		forma = *input.Forma
+	}
 
-	// Tube grain shape: forma = 6
-	kappa := 1.0267
-	lambda := -0.026
-	mu := 0.0
+	kappa, lambda, mu := 1.0267, -0.026, 0.0
+	sis, psis, zk := 1.0, 0.0, 1.0
+	kap2, lam2 := 0.0, 0.0
+	switch forma {
+	case 1:
+		kappa, lambda, mu = 3.0, -1.0, 1.0/3.0
+	case 2:
+		kappa, lambda, mu = 2.1, -0.5714, 0.04762
+	case 3:
+		kappa, lambda, mu = 1.2, -0.175, 0.0083
+	case 4:
+		kappa, lambda, mu = 1.06, -0.0571, 0.000472
+	case 5:
+		kappa, lambda, mu = 1.394, -0.283, 0.0
+	case 6:
+		kappa, lambda, mu = 1.0267, -0.026, 0.0
+	case 7:
+		kappa, lambda, mu = 0.714, 0.2216, -0.0243
+		sis, psis, zk = 1.3703, 0.8549, 1.532
+		kap2, lam2 = 0.5455, -0.94
+	}
 	ek := svod
+	if forma == 7 {
+		ek = svod * zk
+	}
 
 	c4 := omega / q / 3.0
 	fi := afi + c4*(lad+1.0/hi)/(lad+1.0)
 
 	// Thermodynamic constants
+	deltaT := tn - 15.0
+	tgor := tg15 + deltaT
 	rGas := f15 / tg15
-	tgor := tg15
-	fPow := f15
+	fPow := rGas * tgor
 	kovol := 950.0 / fPow
 	teta := 19e4 / fPow
 	kAd := teta + 1.0
 	c0 := omega / ro
-	c1 := kovol - 1.0 / ro
+	c1 := kovol - 1.0/ro
 	c2 := kAd * s
 	c3 := teta * s
-	u1 := u15
+	u1 := u15 / (1.0 - kt*deltaT)
+	if ku1 > 0 {
+		_ = ku1 // reserved for U1 term below
+	}
 	c5 := 2.0 * lambda
 	c6 := 3.0 * mu
 	c7 := kappa * omega / svod
@@ -151,6 +192,7 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 		l   float64
 		psi float64
 		g   float64
+		e   float64
 	}
 
 	var rawPoints []point
@@ -169,12 +211,21 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 			f3 = 0.0
 		} else {
 			z := e / svod
-			sigma := 1.0 + c5*z + c6*z*z
-			psi = kappa * z * (1.0 + lambda*z + mu*z*z)
+			var sigma float64
+			if forma == 7 {
+				z7 := z - 1.0
+				lz7 := lam2 * z7
+				sigma = sis * (1.0 + 2.0*lz7)
+				psi = psis + kap2*z7*(1.0+lz7)
+			} else {
+				sigma = 1.0 + c5*z + c6*z*z
+				psi = kappa * z * (1.0 + lambda*z + mu*z*z)
+			}
 			if psi > 1.0 {
 				psi = 1.0
 			}
-			f3 = u1 * p
+			u1f := u1 * (1.0 + ku1*(e/svod))
+			f3 = u1f * p
 			g = c7 * sigma * f3
 		}
 
@@ -229,6 +280,10 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 
 		// Record sample
 		if stepCount%20 == 0 || y[5] >= ld {
+			e := y[2]
+			if e > ek { // the burn cannot advance past the burnout thickness
+				e = ek
+			}
 			rawPoints = append(rawPoints, point{
 				t:   t,
 				p:   y[0] / 1e6, // store pressure in MPa for clean series scaling
@@ -237,6 +292,7 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 				l:   y[5],
 				psi: psi,
 				g:   g,
+				e:   e,
 			})
 		}
 
@@ -291,6 +347,9 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 	seriesPsi := make([]float64, targetSamples)
 	seriesG := make([]float64, targetSamples)
 
+	seriesE := make([]float64, targetSamples)
+	seriesZ := make([]float64, targetSamples)
+
 	for i := 0; i < targetSamples; i++ {
 		idx := int(float64(i) * float64(len(rawPoints)-1) / float64(targetSamples-1))
 		pt := rawPoints[idx]
@@ -301,12 +360,14 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 		seriesL[i] = pt.l
 		seriesPsi[i] = pt.psi
 		seriesG[i] = pt.g
+		seriesE[i] = pt.e * 1000
+		seriesZ[i] = pt.e / svod
 	}
 	times[0] = 0.0
 	times[len(times)-1] = rawPoints[len(rawPoints)-1].t
 
 	// 5. Build series with historical reference values
-	refP := pMax / 1e6
+	refP := pmax / 1e6
 	refT := tgor
 	refV := vdz
 	refL := ld
@@ -322,6 +383,10 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 			{ID: domain.SeriesID(domain.ModePreparation, 3), Reference: &refL, Name: "Переміщення L", Unit: "м", Values: seriesL},
 			{ID: domain.SeriesID(domain.ModePreparation, 4), Reference: &refPsi, Name: "Частка згорілого Ψ", Unit: "частка", Values: seriesPsi},
 			{ID: domain.SeriesID(domain.ModePreparation, 5), Reference: &refG, Name: "Газоприплив G", Unit: "кг/с", Values: seriesG},
+		},
+		Aux: []domain.Series{
+			{ID: domain.SeriesID(domain.ModePreparation, 6), Name: "Товщина згорілого шару E", Unit: "мм", Values: seriesE},
+			{ID: domain.SeriesID(domain.ModePreparation, 7), Name: "Відносна товщина Z", Unit: "частка", Values: seriesZ},
 		},
 	}
 

@@ -39,7 +39,7 @@ func TestBallistics_DefaultParameters(t *testing.T) {
 		t.Errorf("MaxPressure out of expected range: %g MPa", summary.MaxPressure)
 	}
 
-	if summary.MuzzleVelocity < 850 || summary.MuzzleVelocity > 980 {
+	if summary.MuzzleVelocity < 780 || summary.MuzzleVelocity > 840 {
 		t.Errorf("MuzzleVelocity out of expected range: %g m/s", summary.MuzzleVelocity)
 	}
 
@@ -65,6 +65,28 @@ func TestBallistics_DefaultParameters(t *testing.T) {
 			}
 		}
 	}
+
+	// Aux series E (mm) and Z (relative burnt thickness) mirror the integration
+	// state of the burnt layer: finite, non-negative and non-decreasing.
+	if len(run.Chart.Aux) != 2 {
+		t.Fatalf("Expected 2 aux series (E, Z), got %d", len(run.Chart.Aux))
+	}
+	for _, s := range run.Chart.Aux {
+		if len(s.Values) != len(run.Chart.Time) {
+			t.Fatalf("Aux series %s length mismatch", s.ID)
+		}
+		for i, val := range s.Values {
+			if math.IsNaN(val) || math.IsInf(val, 0) || val < 0 {
+				t.Fatalf("Invalid aux value in %s at %d: %g", s.ID, i, val)
+			}
+			if i > 0 && val < s.Values[i-1] {
+				t.Fatalf("Aux series %s decreased at %d: %g -> %g", s.ID, i, s.Values[i-1], val)
+			}
+		}
+	}
+	if run.Chart.Aux[0].Values[0] != 0 || run.Chart.Aux[1].Values[0] != 0 {
+		t.Fatalf("Aux series must start at zero, got %g and %g", run.Chart.Aux[0].Values[0], run.Chart.Aux[1].Values[0])
+	}
 }
 
 func TestBallistics_ContextCancellation(t *testing.T) {
@@ -75,5 +97,27 @@ func TestBallistics_ContextCancellation(t *testing.T) {
 	_, err := Ballistics(ctx, input)
 	if err == nil {
 		t.Fatal("Expected cancellation error, got nil")
+	}
+}
+
+func TestBallistics_UsesPreparationOverrides(t *testing.T) {
+	omega := 10.0
+
+	base, err := Ballistics(context.Background(), domain.PreparationInputs{})
+	if err != nil {
+		t.Fatalf("base calculation: %v", err)
+	}
+	changed, err := Ballistics(context.Background(), domain.PreparationInputs{
+		Omega: &omega,
+	})
+	if err != nil {
+		t.Fatalf("override calculation: %v", err)
+	}
+	if base.Summary.Ballistics == nil || changed.Summary.Ballistics == nil {
+		t.Fatal("missing ballistics summary")
+	}
+	if changed.Summary.Ballistics.ChargeMass != omega {
+		t.Fatalf("changed charge mass not reflected: expected=%g changed=%g",
+			omega, changed.Summary.Ballistics.ChargeMass)
 	}
 }
