@@ -3,6 +3,8 @@ import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, Cance
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import {preparationFields, KT_CUSTOM_VALUE, parsePreparation, parseKTSelection, ktSelectValue, displayPreparation} from './preparation.mjs';
+import {preparationTables} from './preparation-tables.mjs';
+import {renderPreparationTable} from './preparation-table-view.mjs';
 import {externalMetadata} from './external.mjs';
 import {DebouncedTask} from './debounce.mjs';
 
@@ -50,7 +52,7 @@ document.querySelector('#app').innerHTML = `
         <label>Амплітуда, ум. од.<input id="amplitude" type="number" min="0.000001" max="1000000" step="any" required></label>
         <label>Частота, Гц<input id="frequency" type="number" min="0.000001" max="1000" step="any" required></label>
         </div><p class="hint">DEMO: математичні криві для перевірки інтерфейсу, не фізичний розрахунок.</p></div>
-    <div class="actions"><button id="save" type="submit" disabled>Зберегти</button><button id="calculate" type="button" class="primary">Розрахувати</button>
+    <div class="actions"><button id="preparation-tables-open" type="button" class="preparation-tables-btn" hidden>Таблиці</button><button id="save" type="submit" disabled>Зберегти</button><button id="calculate" type="button" class="primary">Розрахувати</button>
         <button id="demo" type="button" class="primary" hidden>Створити DEMO</button><button id="cancel" type="button" disabled>Скасувати</button>
         </div></form>
 </section>
@@ -63,6 +65,11 @@ document.querySelector('#app').innerHTML = `
         <div class="canvas-wrap"><canvas id="chart" aria-label="Спільне поле нормалізованих часових рядів"></canvas></div><div id="cursor" aria-live="off"></div></section></main>
 <dialog id="discard-dialog"><p>Не вдалося зберегти поточну чернетку. Поверніться до редагування або явно відкиньте незбережені зміни.</p><form method="dialog"><button value="return" autofocus>Повернутися до редагування</button><button value="discard">Відкинути незбережені зміни</button></form></dialog>
 <dialog id="external-dialog"><h3 id="external-dialog-title"></h3><p>Числові часові ряди з CSV. Фізичний зміст визначає джерело даних.</p><dl id="external-details"></dl><form method="dialog"><label>Назва<input id="external-name" maxlength="120" required></label><div class="actions"><button id="external-confirm" value="save">Зберегти результат</button><button value="cancel" formnovalidate autofocus>Закрити / скасувати</button></div></form></dialog>
+<dialog id="preparation-tables-dialog" aria-labelledby="preparation-tables-dialog-title">
+    <div class="reference-dialog-header"><h2 id="preparation-tables-dialog-title">Довідкові таблиці</h2><button id="preparation-tables-close" type="button" aria-label="Закрити довідкові таблиці" autofocus>×</button></div>
+    <div id="preparation-table-tabs" class="reference-tabs" role="tablist" aria-label="Довідкові таблиці"></div>
+    <section id="preparation-table-content" class="reference-table-content" role="tabpanel" tabindex="0"></section>
+</dialog>
 <footer><span id="status" role="status">Відкриття бази даних…</span><span>SQLite · локальне збереження</span></footer>`;
 
 const $ = id => document.getElementById(id);
@@ -313,6 +320,8 @@ function readConfiguration() {
 function updateMode() {
     if (!state) return;
     const mode = state.active.mode, numerical = mode === 'oscillator', preparation = mode === 'preparation';
+    $('preparation-tables-open').hidden = !preparation;
+    $('preparation-tables-open').disabled = busy;
     $('calculate').hidden = mode === 'demo';
     $('calculate').disabled = busy;
     $('demo').hidden = mode !== 'demo';
@@ -642,6 +651,67 @@ function toggleParameters(force) {
     if (chart && typeof chart.requestDraw === 'function') chart.requestDraw();
 }
 $('toggle-parameters').addEventListener('click', () => toggleParameters());
+
+const preparationTableTabs = $('preparation-table-tabs');
+for (const [index, table] of preparationTables.entries()) {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.id = `preparation-table-tab-${table.id}`;
+    tab.dataset.tableId = table.id;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-label', table.title);
+    tab.setAttribute('aria-controls', 'preparation-table-content');
+    tab.setAttribute('aria-selected', String(index === 0));
+    tab.tabIndex = index === 0 ? 0 : -1;
+    tab.textContent = `Таблиця ${index + 1}`;
+    preparationTableTabs.append(tab);
+}
+function selectPreparationTable(id) {
+    const table = preparationTables.find(item => item.id === id);
+    if (!table) throw new Error(`Невідома довідкова таблиця: ${id}`);
+    for (const tab of preparationTableTabs.querySelectorAll('[role="tab"]')) {
+        const selected = tab.dataset.tableId === id;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+    }
+    $('preparation-table-content').setAttribute('aria-labelledby', `preparation-table-tab-${id}`);
+    renderPreparationTable($('preparation-table-content'), table);
+}
+preparationTableTabs.addEventListener('click', event => {
+    const tab = event.target.closest('[role="tab"]');
+    if (tab && preparationTableTabs.contains(tab)) selectPreparationTable(tab.dataset.tableId);
+});
+preparationTableTabs.addEventListener('keydown', event => {
+    const tabs = [...preparationTableTabs.querySelectorAll('[role="tab"]')];
+    const index = tabs.indexOf(document.activeElement);
+    if (index < 0) return;
+    const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+        : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length
+        : event.key === 'Home' ? 0
+        : event.key === 'End' ? tabs.length - 1
+        : -1;
+    if (next < 0) return;
+    event.preventDefault();
+    tabs[next].focus();
+    selectPreparationTable(tabs[next].dataset.tableId);
+});
+selectPreparationTable(preparationTables[0].id);
+$('preparation-tables-open').addEventListener('click', () => {
+    selectPreparationTable(preparationTables[0].id);
+    $('preparation-tables-dialog').showModal();
+});
+$('preparation-tables-close').addEventListener('click', () => $('preparation-tables-dialog').close());
+const preparationTablesDialog = $('preparation-tables-dialog');
+preparationTablesDialog.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    preparationTablesDialog.close();
+});
+preparationTablesDialog.addEventListener('cancel', event => {
+    event.preventDefault();
+    preparationTablesDialog.close();
+});
+preparationTablesDialog.addEventListener('close', () => $('preparation-tables-open').focus({preventScroll: true}));
 
 function applyGoldenRatio() {
     const mainRect = document.querySelector('main').getBoundingClientRect();
