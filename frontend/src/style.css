@@ -91,11 +91,22 @@ input[aria-invalid=true] { border-color: #e38474; }
 .preparation-grid label { max-width: none; }
 @media (max-width: 1050px) { .preparation-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 850px) { .preparation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.field-title { display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preparation-field { display: grid; min-width: 0; gap: 3px; }
+.field-heading { font-size: 11px; line-height: 1.35; color: #aab9cb; overflow-wrap: anywhere; }
+.preparation-field .field-title { display: inline; width: auto; min-width: 0; max-width: none; flex: none; color: inherit; overflow-wrap: anywhere; }
+.field-help-button { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 5px; padding: 0; vertical-align: text-bottom; color: #9ec2e4; border-color: #436280; background: #1c2937; font-size: 12px; line-height: 1; }
+.field-help-button:hover:enabled { color: #fff; background: #263a50; border-color: #5c8ab8; }
+.preparation-controls { display: grid; gap: 4px; min-width: 0; }
+.preparation-controls input, .preparation-controls select { width: 100%; }
+.field-title { overflow-wrap: anywhere; }
 .field-name { font-size: 11px; color: #aab9cb; }
 .field-message { font-size: 10px; color: #f19b94; overflow-wrap: anywhere; }
 .field-message:empty, .field-message:not(.error) { display: none; }
-.unknown-unit .field-name { color: #edbd71; }
+.unknown-unit .field-title { color: #edbd71; }
+.field-help-popup { position: fixed; z-index: 1000; width: max-content; max-width: min(320px, calc(100vw - 16px)); max-height: min(240px, calc(100vh - 16px)); overflow: auto; padding: 9px 11px; border: 1px solid #6597bc; border-radius: 5px; color: #dce5ef; background: #19222e; box-shadow: 0 5px 18px #0009; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.field-help-popup strong { display: block; color: #dce5ef; }
+.field-help-popup p { margin: 5px 0 0; }
+.field-help-popup .field-help-unit { color: #aab9cb; }
 .group-title { display: none; }
 .preparation-note, #preparation-explanation { font-size: 11px; color: #8e9fad; }
 .golden-ratio-btn { border-color: #436280; color: #9ec2e4; background: #1c2937; }

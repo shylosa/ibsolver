@@ -2,7 +2,7 @@ import './style.css';
 import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV} from '../wailsjs/go/main/App';
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {preparationFields, formaOptions, parsePreparation, displayPreparation} from './preparation.mjs';
+import {preparationFields, KT_CUSTOM_VALUE, parsePreparation, parseKTSelection, ktSelectValue, displayPreparation} from './preparation.mjs';
 import {externalMetadata} from './external.mjs';
 import {DebouncedTask} from './debounce.mjs';
 
@@ -73,16 +73,138 @@ const preparationGroups = {
     ro: 3, tg15: 3, ku1: 3, f1: 3, u15: 3, svod: 3,
     pvos: 4, tvos: 4,
 };
-for (const [key, label, unit] of preparationFields) {
-    const element = document.createElement('label');
-    element.className = unit ? '' : 'unknown-unit';
-    const title = unit ? `${label}, ${unit}` : label;
-    const control = key === 'forma'
-        ? `<select id="p-${key}" aria-describedby="p-${key}-message"><option value="">Не задано</option>${formaOptions.map(([value, name]) => `<option value="${value}">${value} - ${name}</option>`).join('')}</select>`
-        : `<input id="p-${key}" type="text" inputmode="decimal" placeholder="Не задано" aria-describedby="p-${key}-message">`;
-    element.innerHTML = `<span class="field-title"><span class="field-name">${title}</span></span>${control}<span id="p-${key}-message" class="field-message"></span>`;
+const fieldHelpItems = [];
+for (const field of preparationFields) {
+    const {key, technicalId, label, unit, description, options} = field;
+    const element = document.createElement('div');
+    element.className = `preparation-field${unit || key === 'forma' ? '' : ' unknown-unit'}`;
+    const heading = document.createElement('div');
+    heading.className = 'field-heading';
+    const title = document.createElement('label');
+    title.className = 'field-title';
+    title.htmlFor = `p-${key}`;
+    title.textContent = `${label} (${technicalId})${unit ? `, ${unit}` : ''}`;
+    const helpButton = document.createElement('button');
+    helpButton.id = `p-${key}-help-button`;
+    helpButton.className = 'field-help-button';
+    helpButton.type = 'button';
+    helpButton.textContent = 'ⓘ';
+    helpButton.setAttribute('aria-label', `Довідка: ${label} (${technicalId})`);
+    helpButton.setAttribute('aria-expanded', 'false');
+    const helpPopup = document.createElement('div');
+    helpPopup.id = `p-${key}-help`;
+    helpPopup.className = 'field-help-popup';
+    helpPopup.setAttribute('role', 'tooltip');
+    helpPopup.hidden = true;
+    const helpTitle = document.createElement('strong');
+    helpTitle.textContent = `${label} (${technicalId})`;
+    const helpDescription = document.createElement('p');
+    helpDescription.textContent = description;
+    helpPopup.append(helpTitle, helpDescription);
+    if (unit) {
+        const unitNote = document.createElement('p');
+        unitNote.className = 'field-help-unit';
+        unitNote.textContent = `Одиниця: ${unit}`;
+        helpPopup.append(unitNote);
+    } else if (key !== 'forma') {
+        const unitNote = document.createElement('p');
+        unitNote.className = 'field-help-unit';
+        unitNote.textContent = 'Окрему одиницю вимірювання в коментарі BAS не зазначено.';
+        helpPopup.append(unitNote);
+    }
+    helpButton.setAttribute('aria-controls', helpPopup.id);
+    helpButton.setAttribute('aria-describedby', helpPopup.id);
+    heading.append(title, helpButton);
+
+    const control = document.createElement(field.control === 'select' ? 'select' : 'input');
+    control.id = `p-${key}`;
+    control.setAttribute('aria-describedby', `p-${key}-message`);
+    if (field.control === 'select') {
+        control.add(new Option('Не задано', ''));
+        for (const option of options) {
+            control.add(new Option(`${option.value} - ${option.label}`, option.value));
+        }
+        if (key === 'kt') {
+            control.add(new Option('Інше числове значення…', KT_CUSTOM_VALUE));
+        }
+    } else {
+        control.type = 'text';
+        control.inputMode = 'decimal';
+        control.placeholder = 'Не задано';
+    }
+    const controls = document.createElement('div');
+    controls.className = 'preparation-controls';
+    controls.append(control);
+    if (key === 'kt') {
+        const customValue = document.createElement('input');
+        customValue.id = 'p-kt-custom';
+        customValue.type = 'text';
+        customValue.inputMode = 'decimal';
+        customValue.placeholder = 'Введіть значення KT';
+        customValue.setAttribute('aria-label', 'Власне числове значення KT');
+        customValue.setAttribute('aria-describedby', 'p-kt-message');
+        customValue.dataset.preparationKey = 'kt';
+        customValue.hidden = true;
+        controls.append(customValue);
+    }
+    const message = document.createElement('span');
+    message.id = `p-${key}-message`;
+    message.className = 'field-message';
+    element.append(heading, controls, message);
     document.querySelectorAll('#preparation-main .preparation-column-fields')[preparationGroups[key]].append(element);
+    document.body.append(helpPopup);
+    fieldHelpItems.push({button: helpButton, popup: helpPopup});
 }
+
+function positionFieldHelp(button, popup) {
+    const rect = button.getBoundingClientRect();
+    const margin = 8, gap = 6;
+    const popupRect = popup.getBoundingClientRect();
+    const maxLeft = Math.max(margin, window.innerWidth - popupRect.width - margin);
+    const left = Math.max(margin, Math.min(rect.left, maxLeft));
+    const below = rect.bottom + gap;
+    const above = rect.top - popupRect.height - gap;
+    const top = below + popupRect.height <= window.innerHeight - margin || above < margin
+        ? Math.max(margin, Math.min(below, window.innerHeight - popupRect.height - margin))
+        : above;
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+}
+function showFieldHelp(button, popup) {
+    popup.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    positionFieldHelp(button, popup);
+}
+function hideFieldHelp(button, popup) {
+    popup.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+}
+for (const {button, popup} of fieldHelpItems) {
+    let hovered = false, focused = false;
+    button.addEventListener('mouseenter', () => { hovered = true; showFieldHelp(button, popup); });
+    button.addEventListener('mouseleave', () => {
+        hovered = false;
+        hideFieldHelp(button, popup);
+    });
+    button.addEventListener('focus', () => { focused = true; showFieldHelp(button, popup); });
+    button.addEventListener('blur', () => {
+        focused = false;
+        if (!hovered) hideFieldHelp(button, popup);
+    });
+    button.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            hideFieldHelp(button, popup);
+        }
+    });
+}
+function repositionFieldHelp() {
+    for (const {button, popup} of fieldHelpItems) {
+        if (!popup.hidden) positionFieldHelp(button, popup);
+    }
+}
+window.addEventListener('resize', repositionFieldHelp);
+window.addEventListener('scroll', repositionFieldHelp, true);
 let state, busy = false, dirty = false, revision = 0;
 let draftQueue = Promise.resolve(), externalChart = null;
 const delayedSave = new DebouncedTask(() => autosave(), 450);
@@ -144,10 +266,10 @@ function readConfiguration() {
         }));
     } else if (mode === 'preparation') {
         const values = {}, inputFormats = {}, errors = [];
-        for (const [key] of preparationFields) {
+        for (const {key} of preparationFields) {
             try {
                 values[key] = readPreparationField(key);
-                inputFormats[key] = $('p-' + key).value;
+                inputFormats[key] = preparationInputFormat(key, values[key]);
             } catch (error) { errors.push([key, error]); }
         }
         if (errors.length) {
@@ -186,16 +308,35 @@ function updateMode() {
         const el = $(id);
         if (el) {
             el.hidden = !active;
-            el.querySelectorAll('input').forEach(field => { field.disabled = busy || !active; });
+            el.querySelectorAll('input, select, button').forEach(field => { field.disabled = busy || !active; });
         }
     }
 }
+function preparationInputFormat(key, value) {
+    const previous = state?.active.parameters.preparation?.inputFormats?.[key];
+    if (typeof previous === 'string') {
+        try {
+            if (parsePreparation(previous, key) === value) return previous;
+        } catch {}
+    }
+    if (key === 'kt' && $('p-kt').value !== KT_CUSTOM_VALUE) return $('p-kt').value;
+    return key === 'kt' ? $('p-kt-custom').value : $('p-' + key).value;
+}
 function readPreparationField(key) {
-    const field = $('p-' + key), message = $('p-' + key + '-message');
+    const control = $('p-' + key);
+    const field = key === 'kt' && control.value === KT_CUSTOM_VALUE ? $('p-kt-custom') : control;
+    const message = $('p-' + key + '-message');
     try {
         const stored = state?.active.parameters.preparation?.[key];
-        const value = stored != null && field.value === displayPreparation(stored, key) ? stored : parsePreparation(field.value, key);
+        const enteredValue = key === 'kt'
+            ? parseKTSelection(control.value, $('p-kt-custom').value)
+            : parsePreparation(field.value, key);
+        const value = stored != null && (
+            enteredValue === stored || field.value === displayPreparation(stored, key)
+        ) ? stored : enteredValue;
         field.setAttribute('aria-invalid', 'false');
+        control.setAttribute('aria-invalid', 'false');
+        if (key === 'kt') $('p-kt-custom').setAttribute('aria-invalid', 'false');
         message.classList.remove('error');
         message.textContent = '';
         return value;
@@ -222,7 +363,7 @@ function resultState(stale = state.stale) {
 }
 function display(next) {
     state = next; dirty = false; externalChart = null; revision++;
-    document.querySelectorAll('.parameters input').forEach(field => { field.removeAttribute('aria-invalid'); field.title = ''; });
+    document.querySelectorAll('.parameters input, .parameters select').forEach(field => { field.removeAttribute('aria-invalid'); field.title = ''; });
     $('configurations').replaceChildren(...state.configurations.map(c => new Option(c.name, c.id, false, c.id === state.active.id)));
     $('name').value = state.active.name;
     $('mode').value = state.active.mode;
@@ -231,9 +372,17 @@ function display(next) {
     for (const [group, prefix] of [['model', 'n-'], ['solver', 's-']]) {
         for (const [key, value] of Object.entries(state.active.parameters.oscillator?.[group] || {})) $(prefix + key).value = value;
     }
-    for (const [key] of preparationFields) {
+    for (const {key} of preparationFields) {
         const preparation = state.active.parameters.preparation;
-        $('p-' + key).value = displayPreparation(preparation?.[key], key, preparation?.inputFormats?.[key]);
+        const value = preparation?.[key];
+        const inputFormat = preparation?.inputFormats?.[key];
+        if (key === 'kt') {
+            $('p-kt').value = ktSelectValue(value);
+            $('p-kt-custom').value = displayPreparation(value, key, inputFormat);
+            $('p-kt-custom').hidden = $('p-kt').value !== KT_CUSTOM_VALUE;
+        } else {
+            $('p-' + key).value = displayPreparation(value, key, inputFormat);
+        }
         try { readPreparationField(key); } catch {}
     }
     $('save-state').textContent = 'Збережено';
@@ -315,7 +464,7 @@ async function save() {
     status('Конфігурацію збережено.');
 }
 function focusInvalid() {
-    const field = document.querySelector('.parameters input[aria-invalid="true"]');
+    const field = document.querySelector('.parameters input[aria-invalid="true"], .parameters select[aria-invalid="true"]');
     if (field) { const details = field.closest('details'); if (details) details.open = true; field.focus(); }
 }
 async function flushForTransition() {
@@ -379,7 +528,8 @@ function autosave() {
 for (const field of document.querySelectorAll('.parameters input')) {
     field.addEventListener('input', () => {
         markDirty(field);
-        if (field.id.startsWith('p-')) { try { readPreparationField(field.id.slice(2)); } catch {} }
+        const preparationKey = field.dataset.preparationKey || (field.id.startsWith('p-') ? field.id.slice(2) : null);
+        if (preparationKey && preparationFields.some(item => item.key === preparationKey)) { try { readPreparationField(preparationKey); } catch {} }
         else if (field.type === 'number') validNumber(field, field.valueAsNumber);
         delayedSave.schedule();
     });
@@ -387,7 +537,15 @@ for (const field of document.querySelectorAll('.parameters input')) {
 $('name').addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); $('inputs').requestSubmit(); }
 });
-for (const [key] of preparationFields) $('p-' + key).addEventListener('blur', () => { try { readPreparationField(key); } catch {} });
+for (const {key} of preparationFields) {
+    $('p-' + key).addEventListener('blur', () => { try { readPreparationField(key); } catch {} });
+    $('p-' + key).addEventListener('change', event => {
+        if (key === 'kt') $('p-kt-custom').hidden = event.currentTarget.value !== KT_CUSTOM_VALUE;
+        markDirty(event.currentTarget);
+        try { readPreparationField(key); } catch {}
+        delayedSave.schedule();
+    });
+}
 $('chart-reset').addEventListener('click', () => chart.reset());
 $('import-json').addEventListener('click', () => operation(async () => {
     await flushForTransition();
@@ -415,14 +573,14 @@ $('mode').addEventListener('change', event => {
     operation(async () => {
         await flushForTransition();
         const parameters = structuredClone(state.active.parameters);
-        if (mode === 'preparation') parameters.preparation ||= Object.fromEntries(preparationFields.map(([key]) => [key, null]));
+        if (mode === 'preparation') parameters.preparation ||= Object.fromEntries(preparationFields.map(({key}) => [key, null]));
         display(await SaveConfiguration({...state.active, mode, parameters}, state.settings));
         status('Режим змінено. Параметри режимів збережено.');
     }).finally(() => { $('mode').value = state.active.mode; });
 });
 $('new').addEventListener('click', () => operation(async () => {
     await flushForTransition();
-    display(await SaveConfiguration({id: 0, name: `Конфігурація ${state.configurations.length + 1}`, mode: 'preparation', parameters: {...state.active.parameters, preparation: Object.fromEntries(preparationFields.map(([key]) => [key, null]))}}, state.settings));
+    display(await SaveConfiguration({id: 0, name: `Конфігурація ${state.configurations.length + 1}`, mode: 'preparation', parameters: {...state.active.parameters, preparation: Object.fromEntries(preparationFields.map(({key}) => [key, null]))}}, state.settings));
     $('name').focus(); $('name').select();
 }));
 $('demo').addEventListener('click', () => operation(async () => {
