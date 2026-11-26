@@ -25,7 +25,7 @@ document.querySelector('#app').innerHTML = `
             <section class="preparation-column"><h3>Характеристики ствола</h3><div class="preparation-column-fields"></div></section>
             <section class="preparation-column"><h3>Характеристики заряду</h3><div class="preparation-column-fields"></div></section>
             <section class="preparation-column"><h3>Характеристики пороху</h3><div class="preparation-column-fields"></div></section>
-            <section class="preparation-column"><h3>Характеристики воспламенителя</h3><div class="preparation-column-fields"></div></section>
+            <section class="preparation-column"><h3>Характеристики запалювача</h3><div class="preparation-column-fields"></div></section>
         </div>
         </div><div id="oscillator-fields"><div class="numerical-fields">
         <label>Маса m, кг<input id="n-mass" type="number" min="1e-12" step="any" required></label>
@@ -77,44 +77,51 @@ const fieldHelpItems = [];
 for (const field of preparationFields) {
     const {key, technicalId, label, unit, description, options} = field;
     const element = document.createElement('div');
-    element.className = `preparation-field${unit || key === 'forma' ? '' : ' unknown-unit'}`;
+    element.className = 'preparation-field';
     const heading = document.createElement('div');
     heading.className = 'field-heading';
     const title = document.createElement('label');
     title.className = 'field-title';
     title.htmlFor = `p-${key}`;
-    title.textContent = `${label} (${technicalId})${unit ? `, ${unit}` : ''}`;
     const helpButton = document.createElement('button');
     helpButton.id = `p-${key}-help-button`;
     helpButton.className = 'field-help-button';
     helpButton.type = 'button';
     helpButton.textContent = 'ⓘ';
-    helpButton.setAttribute('aria-label', `Довідка: ${label} (${technicalId})`);
+    helpButton.setAttribute('aria-label', `Довідка: ${label}`);
     helpButton.setAttribute('aria-expanded', 'false');
     const helpPopup = document.createElement('div');
     helpPopup.id = `p-${key}-help`;
     helpPopup.className = 'field-help-popup';
     helpPopup.setAttribute('role', 'tooltip');
     helpPopup.hidden = true;
+    const helpHeading = document.createElement('div');
+    helpHeading.className = 'field-help-heading';
     const helpTitle = document.createElement('strong');
-    helpTitle.textContent = `${label} (${technicalId})`;
-    const helpDescription = document.createElement('p');
-    helpDescription.textContent = description;
-    helpPopup.append(helpTitle, helpDescription);
-    if (unit) {
-        const unitNote = document.createElement('p');
-        unitNote.className = 'field-help-unit';
-        unitNote.textContent = `Одиниця: ${unit}`;
-        helpPopup.append(unitNote);
-    } else if (key !== 'forma') {
-        const unitNote = document.createElement('p');
-        unitNote.className = 'field-help-unit';
-        unitNote.textContent = 'Окрему одиницю вимірювання в коментарі BAS не зазначено.';
-        helpPopup.append(unitNote);
+    helpTitle.textContent = unit ? `${label}, ${unit}` : label;
+    const helpCode = document.createElement('code');
+    helpCode.textContent = technicalId;
+    helpHeading.append(helpTitle, helpCode);
+    helpPopup.append(helpHeading);
+    if (description) {
+        const helpDescription = document.createElement('p');
+        helpDescription.textContent = description;
+        helpPopup.append(helpDescription);
     }
     helpButton.setAttribute('aria-controls', helpPopup.id);
     helpButton.setAttribute('aria-describedby', helpPopup.id);
-    heading.append(title, helpButton);
+    // Both pieces of the label target the same input when clicked.
+    const lastSpace = label.lastIndexOf(' ');
+    const lastWord = title.cloneNode();
+    lastWord.textContent = label.slice(lastSpace + 1);
+    const helpAnchor = document.createElement('span');
+    helpAnchor.className = 'field-help-anchor';
+    helpAnchor.append(lastWord, helpButton);
+    if (lastSpace !== -1) {
+        title.textContent = label.slice(0, lastSpace);
+        heading.append(title, ' ');
+    }
+    heading.append(helpAnchor);
 
     const control = document.createElement(field.control === 'select' ? 'select' : 'input');
     control.id = `p-${key}`;
@@ -134,7 +141,19 @@ for (const field of preparationFields) {
     }
     const controls = document.createElement('div');
     controls.className = 'preparation-controls';
-    controls.append(control);
+    if (field.control === 'text' && unit) {
+        const valueField = document.createElement('div');
+        valueField.className = 'field-with-unit';
+        const suffix = document.createElement('span');
+        suffix.className = 'field-unit';
+        suffix.id = `p-${key}-unit`;
+        suffix.textContent = unit;
+        control.setAttribute('aria-describedby', `${suffix.id} p-${key}-message`);
+        valueField.append(control, suffix);
+        controls.append(valueField);
+    } else {
+        controls.append(control);
+    }
     if (key === 'kt') {
         const customValue = document.createElement('input');
         customValue.id = 'p-kt-custom';

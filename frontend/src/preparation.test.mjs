@@ -53,16 +53,34 @@ test('FORMA select names follow the BAS grain-shape descriptions', () => {
     assert.deepEqual(formaOptions[6], {value: 7, label: '7-ми канальн.'});
 });
 
-test('parameter metadata documents every field and limits selects to confirmed alternatives', () => {
-    assert.equal(preparationFields.length, 22);
-    assert.equal(new Set(preparationFields.map(field => field.key)).size, 22);
+test('all 22 controls have plain labels and separate help and unit metadata', () => {
+    assert.deepEqual(preparationFields.map(field => field.key), [
+        'pmax', 'vd', 'd', 'q', 'ns', 'hi', 'af', 'pfor', 'kt', 'tn', 'forma',
+        'omega', 'w0', 'ro', 'tg15', 'ku1', 'f1', 'u15', 'svod', 'pvos', 'tvos', 'lc',
+    ]);
     for (const field of preparationFields) {
         assert.ok(field.technicalId, field.key);
         assert.ok(field.label, field.key);
-        assert.ok(field.description, field.key);
+        assert.ok(!field.label.includes(`(${field.technicalId})`), field.key);
+        if (field.unit) {
+            assert.ok(!field.label.endsWith(`, ${field.unit}`), field.key);
+            assert.equal(field.control, 'text', field.key);
+        }
+        if (field.description !== undefined) {
+            assert.ok(field.description.trim(), field.key);
+            assert.doesNotMatch(field.description, /\bBAS\b/);
+        }
         assert.ok(field.source, field.key);
         assert.ok(['text', 'select'].includes(field.control), field.key);
     }
+    const byKey = Object.fromEntries(preparationFields.map(field => [field.key, field]));
+    assert.equal(byKey.pmax.label, 'Максимальний тиск у стволі');
+    assert.equal(byKey.d.unit, 'мм');
+    assert.equal(byKey.d.description, undefined);
+    assert.equal(byKey.q.description, undefined);
+    assert.ok(byKey.kt.description);
+    assert.equal(byKey.kt.unit, null);
+    assert.equal(byKey.forma.unit, null);
     assert.deepEqual(preparationFields.filter(field => field.control === 'select').map(field => field.key), ['kt', 'forma']);
     assert.deepEqual(ktOptions, [
         {value: 0.0025, label: 'Нітрогліцериновий порох'},
