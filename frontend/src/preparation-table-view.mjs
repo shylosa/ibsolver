@@ -1,8 +1,5 @@
 export function renderPreparationTable(container, table) {
     const fragment = document.createDocumentFragment();
-    const heading = document.createElement('h3');
-    heading.className = 'reference-table-title';
-    heading.textContent = table.title;
 
     const scroll = document.createElement('div');
     scroll.className = 'reference-table-scroll';
@@ -19,28 +16,24 @@ export function renderPreparationTable(container, table) {
 
     const head = document.createElement('thead');
     const headingRow = document.createElement('tr');
-    const unitRow = document.createElement('tr');
-    const hasUnitRow = table.columns.some(column => column.unit);
-    element.dataset.headerRows = String(hasUnitRow ? 2 : 1);
     for (const column of table.columns) {
+        if (column.headerHidden) continue;
         const cell = document.createElement('th');
         cell.scope = 'col';
-        if (hasUnitRow && !column.unit) cell.rowSpan = 2;
+        if (column.headerColSpan) cell.colSpan = column.headerColSpan;
         const label = document.createElement('span');
         label.className = 'reference-table-label';
         label.textContent = column.label;
         cell.append(label);
         if (column.unit) {
-            const unit = document.createElement('th');
-            unit.scope = 'col';
+            const unit = document.createElement('span');
             unit.className = 'reference-table-unit';
             unit.textContent = column.unit;
-            unitRow.append(unit);
+            cell.append(unit);
         }
         headingRow.append(cell);
     }
     head.append(headingRow);
-    if (hasUnitRow) head.append(unitRow);
     element.append(head);
 
     const body = document.createElement('tbody');
@@ -70,6 +63,6 @@ export function renderPreparationTable(container, table) {
     }
     element.append(body);
     scroll.append(element);
-    fragment.append(heading, scroll);
+    fragment.append(scroll);
     container.replaceChildren(fragment);
 }

@@ -2,7 +2,7 @@ import './style.css';
 import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV} from '../wailsjs/go/main/App';
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {preparationFields, workbookPreparationFields, KT_CUSTOM_VALUE, parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation} from './preparation.mjs';
+import {preparationFields, workbookPreparationFields, preparationResultPanel, KT_CUSTOM_VALUE, parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation} from './preparation.mjs';
 import {preparationTables} from './preparation-tables.mjs';
 import {renderPreparationTable} from './preparation-table-view.mjs';
 import {externalMetadata} from './external.mjs';
@@ -11,14 +11,25 @@ import {DebouncedTask} from './debounce.mjs';
 document.querySelector('#app').innerHTML = `
 <header><div class="brand">IB<span>Solver</span><small>ІНЖЕНЕРНИЙ РОБОЧИЙ ПРОСТІР</small></div>
     <div class="header-actions">
-        <button id="preparation-nav" class="stage" type="button" aria-current="false">Підготовчі дані</button>
-        <button id="reload">Відновити з БД</button>
-        <button id="quick-calculate" class="primary quick-calc-btn" title="Виконати розрахунок" hidden>Розрахувати</button>
-        <button id="toggle-parameters" class="toggle-parameters-btn" aria-expanded="true" title="Згорнути або розгорнути панель параметрів для звільнення робочого простору">▲ Згорнути параметри</button>
+        <div class="header-primary-actions">
+            <div class="header-data-actions">
+                <button id="reload" type="button">Відновити з БД</button>
+                <button id="save" type="button" disabled>Зберегти</button>
+            </div>
+            <div class="header-calculation-actions">
+                <button id="calculate" type="button" class="primary">Розрахувати</button>
+                <button id="demo" type="button" class="primary" hidden>Створити DEMO</button>
+                <button id="cancel" type="button" disabled>Скасувати</button>
+            </div>
+        </div>
+        <div class="header-navigation-actions">
+            <button id="toggle-parameters" class="toggle-parameters-btn" aria-expanded="true" title="Згорнути або розгорнути панель параметрів для звільнення робочого простору">▲ Згорнути параметри</button>
+            <button id="preparation-nav" class="header-nav-button" type="button">Підготовчі дані</button>
+        </div>
     </div></header>
 <section class="parameters" aria-label="Параметри конфігурації">
     <div class="configuration-row"><label>Конфігурація<select id="configurations"></select></label>
-        <label>Режим<select id="mode"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option><option value="demo">DEMO · інтерфейс</option></select></label>
+        <label id="mode-field">Режим<select id="mode"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option><option value="demo">DEMO · інтерфейс</option></select></label>
         <label class="name-field">Назва<input id="name" maxlength="120" required></label><button id="new">Нова</button>
         <button id="import-json">Імпорт JSON</button><button id="export-json">Експорт JSON</button><span id="save-state" role="status"></span></div>
     <form id="inputs" novalidate>    <div id="preparation-fields">
@@ -52,43 +63,30 @@ document.querySelector('#app').innerHTML = `
         <label>Амплітуда, ум. од.<input id="amplitude" type="number" min="0.000001" max="1000000" step="any" required></label>
         <label>Частота, Гц<input id="frequency" type="number" min="0.000001" max="1000" step="any" required></label>
         </div><p class="hint">DEMO: математичні криві для перевірки інтерфейсу, не фізичний розрахунок.</p></div>
-    <div class="actions"><button id="save" type="submit" disabled>Зберегти</button><button id="calculate" type="button" class="primary">Розрахувати</button>
-        <button id="demo" type="button" class="primary" hidden>Створити DEMO</button><button id="cancel" type="button" disabled>Скасувати</button>
-        </div></form>
+    </form>
 </section>
 <section id="preparation-screen" class="preparation-screen" hidden aria-labelledby="preparation-screen-title">
     <div class="preparation-screen-heading">
-        <div><h1 id="preparation-screen-title" tabindex="-1">Підготовчі дані</h1><p id="preparation-configuration"></p></div>
-        <button id="workspace-back" type="button">До робочого екрана</button>
+        <h1 id="preparation-screen-title" tabindex="-1">Підготовчі дані</h1>
     </div>
     <div class="preparation-screen-grid">
         <form id="workbook-preparation-form" class="workbook-preparation-form" novalidate>
-            <section class="workbook-field-group" aria-labelledby="workbook-inputs-title">
-                <h2 id="workbook-inputs-title">Початкові дані</h2>
+            <section class="workbook-field-group" aria-label="Сім полів підготовчих даних">
                 <div id="workbook-input-fields" class="workbook-input-fields"></div>
             </section>
-            <section class="workbook-field-group" aria-labelledby="workbook-coefficients-title">
-                <h2 id="workbook-coefficients-title">Вибрані коефіцієнти</h2>
-                <p class="workbook-unit-note">Одиниці вимірювання цих коефіцієнтів у книзі не вказані.</p>
-                <div id="workbook-coefficient-fields" class="workbook-input-fields"></div>
-            </section>
-            <div class="actions">
-                <button id="preparation-tables-open" type="button" class="preparation-tables-btn">Довідкові таблиці</button>
-                <button id="preparation-save" type="button" disabled>Зберегти</button>
-            </div>
         </form>
-        <aside id="preparation-results" class="preparation-results" aria-label="Результати підготовчих даних">
-            <div class="section-title">Результати <span class="badge">ЗБЕРЕЖЕНІ</span></div>
-            <p id="preparation-result-state"></p>
-            <p id="preparation-result-source" class="preparation-result-source" hidden></p>
-            <dl id="preparation-result-summary"></dl>
-            <details id="preparation-intermediate" class="preparation-intermediate">
-                <summary>Проміжні значення збережених рядів</summary>
-                <p id="preparation-intermediate-note"></p>
-                <ul id="preparation-intermediate-series"></ul>
-            </details>
+        <aside id="preparation-results" class="preparation-results" aria-label="${preparationResultPanel.title}">
+            <div class="section-title">${preparationResultPanel.title}</div>
+            <p id="preparation-result-state">${preparationResultPanel.message}</p>
         </aside>
     </div>
+    <section id="preparation-reference-section" class="preparation-reference-section" aria-labelledby="preparation-reference-title">
+        <h2 id="preparation-reference-title" class="preparation-reference-title">Довідкові таблиці</h2>
+        <div id="preparation-reference-body" class="preparation-reference-body">
+            <div id="preparation-table-tabs" class="reference-tabs" role="tablist" aria-label="Довідкові таблиці"></div>
+            <section id="preparation-table-content" class="reference-table-content" role="tabpanel" tabindex="0"></section>
+        </div>
+    </section>
 </section>
 <main id="workspace"><aside id="results"><div class="section-title">Результати <span id="result-kind" class="badge">RK45</span></div>
     <label class="history">Зовнішні результати<select id="external-results" aria-label="Збережені зовнішні результати"></select></label><div class="history-actions"><button id="external-metadata">Метадані</button><button id="external-delete">Видалити…</button></div>
@@ -99,11 +97,6 @@ document.querySelector('#app').innerHTML = `
         <div class="canvas-wrap"><canvas id="chart" aria-label="Спільне поле нормалізованих часових рядів"></canvas></div><div id="cursor" aria-live="off"></div></section></main>
 <dialog id="discard-dialog"><p>Не вдалося зберегти поточну чернетку. Поверніться до редагування або явно відкиньте незбережені зміни.</p><form method="dialog"><button value="return" autofocus>Повернутися до редагування</button><button value="discard">Відкинути незбережені зміни</button></form></dialog>
 <dialog id="external-dialog"><h3 id="external-dialog-title"></h3><p>Числові часові ряди з CSV. Фізичний зміст визначає джерело даних.</p><dl id="external-details"></dl><form method="dialog"><label>Назва<input id="external-name" maxlength="120" required></label><div class="actions"><button id="external-confirm" value="save">Зберегти результат</button><button value="cancel" formnovalidate autofocus>Закрити / скасувати</button></div></form></dialog>
-<dialog id="preparation-tables-dialog" aria-labelledby="preparation-tables-dialog-title">
-    <div class="reference-dialog-header"><h2 id="preparation-tables-dialog-title">Довідкові таблиці</h2><button id="preparation-tables-close" type="button" aria-label="Закрити довідкові таблиці" autofocus>×</button></div>
-    <div id="preparation-table-tabs" class="reference-tabs" role="tablist" aria-label="Довідкові таблиці"></div>
-    <section id="preparation-table-content" class="reference-table-content" role="tabpanel" tabindex="0"></section>
-</dialog>
 <footer><span id="status" role="status">Відкриття бази даних…</span><span>SQLite · локальне збереження</span></footer>`;
 
 const $ = id => document.getElementById(id);
@@ -258,19 +251,22 @@ for (const field of workbookPreparationFields) {
     input.placeholder = 'Не задано';
     input.autocomplete = 'off';
     input.dataset.preparationWorkbookKey = field.key;
-    input.setAttribute('aria-describedby', `workbook-${field.key}-unit workbook-${field.key}-message`);
+    input.setAttribute('aria-describedby', `${field.unit ? `workbook-${field.key}-unit ` : ''}workbook-${field.key}-message`);
     const unit = document.createElement('span');
-    unit.id = `workbook-${field.key}-unit`;
-    unit.className = field.unit ? 'field-unit' : 'workbook-unknown-unit';
-    unit.textContent = field.unit || 'Одиницю не встановлено';
     const valueField = document.createElement('div');
     valueField.className = 'workbook-value-field';
-    valueField.append(input, unit);
+    valueField.append(input);
+    if (field.unit) {
+        unit.id = `workbook-${field.key}-unit`;
+        unit.className = 'field-unit';
+        unit.textContent = field.unit;
+        valueField.append(unit);
+    }
     const message = document.createElement('span');
     message.id = `workbook-${field.key}-message`;
     message.className = 'field-message';
     element.append(heading, valueField, message);
-    document.getElementById(field.unit ? 'workbook-input-fields' : 'workbook-coefficient-fields').append(element);
+    document.getElementById('workbook-input-fields').append(element);
     document.body.append(helpPopup);
     fieldHelpItems.push({button: helpButton, popup: helpPopup});
 }
@@ -352,7 +348,6 @@ function setBusy(value) {
     $('export-csv').disabled = value || !(visibleRun() || externalChart);
     $('external-metadata').disabled = $('external-delete').disabled = value || !externalChart;
     $('chart-reset').disabled = value || !(visibleRun() || externalChart);
-    $('save').disabled = value || !dirty;
     if (state) updateMode();
 }
 async function operation(action) {
@@ -423,20 +418,14 @@ function readConfiguration() {
 function updateMode() {
     if (!state) return;
     const mode = state.active.mode, numerical = mode === 'oscillator', preparation = mode === 'preparation';
-    $('preparation-nav').disabled = busy || preparationScreen;
-    $('preparation-tables-open').hidden = !preparationScreen;
-    $('preparation-tables-open').disabled = busy || !preparationScreen;
-    $('preparation-save').disabled = busy || !dirty;
-    $('calculate').hidden = mode === 'demo';
+    $('preparation-nav').textContent = preparationScreen ? 'Робочий екран' : 'Підготовчі дані';
+    $('preparation-nav').disabled = busy;
+    $('save').disabled = busy || !dirty;
+    $('calculate').hidden = preparationScreen || mode === 'demo';
     $('calculate').disabled = busy;
-    $('demo').hidden = mode !== 'demo';
-    $('cancel').hidden = !(numerical || preparation);
-    const isCollapsed = document.querySelector('.parameters')?.classList.contains('collapsed');
-    const quickCalc = $('quick-calculate');
-    if (quickCalc) {
-        quickCalc.hidden = !isCollapsed || mode === 'demo';
-        quickCalc.disabled = busy;
-    }
+    $('demo').hidden = preparationScreen || mode !== 'demo';
+    $('cancel').hidden = preparationScreen || !(numerical || preparation);
+    $('toggle-parameters').hidden = preparationScreen;
     for (const [id, active] of [['oscillator-fields', numerical], ['demo-fields', mode === 'demo'], ['preparation-fields', preparation]]) {
         const el = $(id);
         if (el) {
@@ -621,69 +610,18 @@ function renderWorkbookPreparationFields() {
         field.value = text;
         try { readWorkbookPreparationField(key); } catch {}
     }
-    $('preparation-configuration').textContent = `Конфігурація: ${state.active.name}`;
-    renderPreparationResults();
 }
 function setPreparationScreen(active) {
     preparationScreen = active;
     $('preparation-screen').hidden = !active;
     $('inputs').hidden = active;
     document.body.classList.toggle('preparation-screen-active', active);
-    $('preparation-nav').setAttribute('aria-current', active ? 'page' : 'false');
     updateMode();
     if (active) {
         renderWorkbookPreparationFields();
         $('preparation-screen-title').focus({preventScroll: true});
     } else {
         chart.requestDraw();
-    }
-}
-function renderPreparationResults() {
-    const run = state.run?.mode === 'preparation' && state.run.summary?.kind === 'BALLISTICS'
-        ? state.run
-        : null;
-    const stateText = $('preparation-result-state');
-    const source = $('preparation-result-source');
-    const summary = $('preparation-result-summary');
-    const seriesList = $('preparation-intermediate-series');
-    summary.replaceChildren();
-    seriesList.replaceChildren();
-    if (!run?.summary.ballistics) {
-        stateText.textContent = 'Результати недоступні: окремого розрахунку для цього екрана немає.';
-        source.textContent = 'Збережений приклад Excel не підставляється замість нового результату.';
-        source.hidden = false;
-        $('preparation-intermediate-note').textContent = 'Проміжні значення Excel у форматі збережених запусків IBSolver відсутні.';
-        return;
-    }
-    const ballistics = run.summary.ballistics;
-    stateText.textContent = dirty && preparationScreen
-        ? `Є незбережені зміни. Збережений запуск №${run.id} не є результатом цих полів.`
-        : state.stale
-            ? `Збережений запуск №${run.id}; він попередній до змінених параметрів.`
-            : `Наявний збережений запуск IBSolver №${run.id}.`;
-    source.textContent = 'Наведені значення взято зі збереженого запуску IBSolver. Цей екран не запускав обчислення за сімома полями й не відтворює формули Excel.';
-    source.hidden = false;
-    const addRow = (container, label, value) => {
-        const term = document.createElement('dt');
-        const description = document.createElement('dd');
-        term.textContent = label;
-        description.textContent = value;
-        container.append(term, description);
-    };
-    addRow(summary, 'Максимальний тиск', `${ballistics.maxPressure.toFixed(1)} МПа`);
-    addRow(summary, 'Дульна швидкість', `${ballistics.muzzleVelocity.toFixed(1)} м/с`);
-    addRow(summary, 'Час руху снаряда', `${(ballistics.muzzleTime * 1000).toFixed(2)} мс`);
-    addRow(summary, 'Шлях снаряда', `${ballistics.barrelTravel.toFixed(3)} м`);
-    $('preparation-intermediate-note').textContent = 'Показано перше й останнє збережене значення ряду. Це дані запуску IBSolver, а не проміжні клітинки Excel; повний ряд доступний на Canvas робочого екрана.';
-    for (const series of run.chart.series) {
-        const item = document.createElement('li');
-        const first = series.values[0].toPrecision(6);
-        const last = series.values[series.values.length - 1].toPrecision(6);
-        const unit = series.unit ? ` ${series.unit}` : ' (одиницю не вказано)';
-        const start = run.chart.time[0].toPrecision(6);
-        const end = run.chart.time[run.chart.time.length - 1].toPrecision(6);
-        item.textContent = `${series.name}: ${first} → ${last}${unit} · ${series.values.length} точок · ${start}–${end} с`;
-        seriesList.append(item);
     }
 }
 async function save() {
@@ -710,7 +648,7 @@ async function flushForTransition() {
     }
 }
 function markDirty(field) {
-    dirty = true; revision++; $('save').disabled = busy; $('preparation-save').disabled = busy;
+    dirty = true; revision++; $('save').disabled = busy;
     $('save-state').textContent = 'Є незбережені зміни';
     if (!externalChart && visibleRun() && field.id !== 'name') {
         let changed = true;
@@ -735,9 +673,7 @@ function queueSave() {
         const next = await SaveConfiguration(configuration, settings);
         if (version !== revision || state.active.id !== configurationID) return;
         state = {...next, settings: state.settings}; dirty = false;
-        $('save-state').textContent = 'Збережено'; $('save').disabled = $('preparation-save').disabled = true;
-        $('preparation-configuration').textContent = `Конфігурація: ${state.active.name}`;
-        renderPreparationResults();
+        $('save-state').textContent = 'Збережено'; $('save').disabled = true;
         const option = [...$('configurations').options].find(item => Number(item.value) === state.active.id);
         if (option) option.textContent = state.active.name;
         if (!externalChart) {
@@ -748,7 +684,7 @@ function queueSave() {
     });
     draftQueue = request.catch(error => {
         if (version === revision && state.active.id === configurationID) {
-            dirty = true; $('save-state').textContent = 'Не збережено'; $('save').disabled = $('preparation-save').disabled = busy;
+            dirty = true; $('save-state').textContent = 'Не збережено'; $('save').disabled = busy;
             status(errorMessage(error), true);
         }
     });
@@ -800,17 +736,11 @@ $('export-csv').addEventListener('click', () => operation(async () => {
 }));
 $('inputs').addEventListener('submit', event => { event.preventDefault(); operation(save); });
 $('workbook-preparation-form').addEventListener('submit', event => { event.preventDefault(); operation(save); });
-$('preparation-save').addEventListener('click', () => operation(save));
-$('preparation-nav').addEventListener('click', () => {
-    if (preparationScreen) return;
-    operation(async () => {
-        await flushForTransition();
-        setPreparationScreen(true);
-    });
-});
-$('workspace-back').addEventListener('click', () => operation(async () => {
+$('save').addEventListener('click', () => operation(save));
+$('preparation-nav').addEventListener('click', () => operation(async () => {
+    const showPreparation = !preparationScreen;
     await flushForTransition();
-    setPreparationScreen(false);
+    setPreparationScreen(showPreparation);
 }));
 $('configurations').addEventListener('change', event => {
     const id = Number(event.target.value);
@@ -848,7 +778,6 @@ async function runCalculate() {
     const isPrep = state.active.mode === 'preparation';
     status(isPrep ? 'Виконується балістичний розрахунок…' : 'Виконується чисельне інтегрування RK45…');
     $('calculate').textContent = 'Обчислення…';
-    $('quick-calculate').textContent = 'Обчислення…';
     $('cancel').disabled = false;
     try {
         display(await Calculate(state.active.id));
@@ -856,12 +785,10 @@ async function runCalculate() {
     }
     finally {
         $('calculate').textContent = 'Розрахувати';
-        $('quick-calculate').textContent = 'Розрахувати';
         $('cancel').disabled = true;
     }
 }
 $('calculate').addEventListener('click', () => operation(runCalculate));
-$('quick-calculate').addEventListener('click', () => operation(runCalculate));
 
 function toggleParameters(force) {
     const section = document.querySelector('.parameters');
@@ -873,8 +800,6 @@ function toggleParameters(force) {
         toggleBtn.textContent = isCollapsed ? '▼ Розгорнути параметри' : '▲ Згорнути параметри';
         toggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
     }
-    const quickCalc = $('quick-calculate');
-    if (quickCalc) quickCalc.hidden = !isCollapsed || state?.active?.mode === 'demo';
     localStorage.setItem('ibsolver_params_collapsed', isCollapsed ? '1' : '0');
     if (chart && typeof chart.requestDraw === 'function') chart.requestDraw();
 }
@@ -891,7 +816,7 @@ for (const [index, table] of preparationTables.entries()) {
     tab.setAttribute('aria-controls', 'preparation-table-content');
     tab.setAttribute('aria-selected', String(index === 0));
     tab.tabIndex = index === 0 ? 0 : -1;
-    tab.textContent = `Таблиця ${index + 1}`;
+    tab.textContent = table.title;
     preparationTableTabs.append(tab);
 }
 function selectPreparationTable(id) {
@@ -924,22 +849,6 @@ preparationTableTabs.addEventListener('keydown', event => {
     selectPreparationTable(tabs[next].dataset.tableId);
 });
 selectPreparationTable(preparationTables[0].id);
-$('preparation-tables-open').addEventListener('click', () => {
-    selectPreparationTable(preparationTables[0].id);
-    $('preparation-tables-dialog').showModal();
-});
-$('preparation-tables-close').addEventListener('click', () => $('preparation-tables-dialog').close());
-const preparationTablesDialog = $('preparation-tables-dialog');
-preparationTablesDialog.addEventListener('keydown', event => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    preparationTablesDialog.close();
-});
-preparationTablesDialog.addEventListener('cancel', event => {
-    event.preventDefault();
-    preparationTablesDialog.close();
-});
-preparationTablesDialog.addEventListener('close', () => $('preparation-tables-open').focus({preventScroll: true}));
 
 function applyGoldenRatio() {
     const mainRect = document.querySelector('main').getBoundingClientRect();

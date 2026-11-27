@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation, preparationFields, workbookPreparationFields, formaOptions, ktOptions, KT_CUSTOM_VALUE} from './preparation.mjs';
+import {parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation, preparationFields, workbookPreparationFields, preparationResultPanel, formaOptions, ktOptions, KT_CUSTOM_VALUE} from './preparation.mjs';
 
 test('historical workbook editor exposes exactly seven inputs and confirmed units', () => {
     assert.deepEqual(workbookPreparationFields.map(({key}) => key), ['d', 'q', 'vd', 'lc', 'ns', 'f1', 'af']);
@@ -10,6 +10,14 @@ test('historical workbook editor exposes exactly seven inputs and confirmed unit
         assert.ok(field.label);
         assert.ok(field.help);
     }
+});
+
+test('preparation result panel stays unavailable and never presents calculator values', () => {
+    assert.deepEqual(preparationResultPanel, {
+        title: 'Результати підготовки',
+        message: "Підготовчий розрахунок поки недоступний. Введені значення можна зберегти. Результати з'являться тут після підключення розрахункового модуля.",
+    });
+    assert.deepEqual(Object.keys(preparationResultPanel), ['title', 'message']);
 });
 
 test('workbook editor parser accepts finite locale numbers without inferred units', () => {

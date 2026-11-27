@@ -39,6 +39,11 @@ export const formaOptions = preparationFields.find(field => field.key === 'forma
 export const ktOptions = preparationFields.find(field => field.key === 'kt').options;
 export const KT_CUSTOM_VALUE = 'custom';
 
+export const preparationResultPanel = {
+    title: 'Результати підготовки',
+    message: "Підготовчий розрахунок поки недоступний. Введені значення можна зберегти. Результати з'являться тут після підключення розрахункового модуля.",
+};
+
 export const workbookPreparationFields = [
     {key: 'd', label: 'd', unit: 'мм', help: 'Калібр (підпис C7; одиниця мм у E7).'},
     {key: 'q', label: 'q', unit: 'кг', help: 'Маса снаряда (підпис C8; одиниця кг у E8).'},

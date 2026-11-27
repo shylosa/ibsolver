@@ -3,14 +3,14 @@ export const preparationTables = [
         id: 'slukhotsky-table-1',
         title: 'Таблица 1 (Слухоцкого)',
         columns: [
-            {label: 'Ce ', unit: 'МДж/м3 '},
-            {label: 'pm.кр', unit: '  МПа'},
+            {label: 'Ce, ', unit: 'МДж/м3 '},
+            {label: 'pm.кр, ', unit: 'МПа'},
             {label: ' Delta,  ', unit: 'кг/м3  '},
             {label: 'Hi'},
             {label: 'Kисп, ', unit: 'МДж/кг'},
             {label: 'Lств /d '},
-            {label: 'V0 '},
-            {label: 'при cq=15000', text: true},
+            {label: 'V0 при cq=15000', headerColSpan: 2},
+            {label: '', text: true, headerHidden: true},
         ],
         groupColumn: true,
         rows: [
