@@ -41,7 +41,6 @@ export const KT_CUSTOM_VALUE = 'custom';
 
 export const preparationResultPanel = {
     title: 'Результати підготовки',
-    message: "Підготовчий розрахунок поки недоступний. Введені значення можна зберегти. Результати з'являться тут після підключення розрахункового модуля.",
 };
 
 export const workbookPreparationFields = [

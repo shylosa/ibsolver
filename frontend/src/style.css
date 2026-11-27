@@ -1,7 +1,7 @@
 :root { color-scheme: dark; font: 13px 'Segoe UI', sans-serif; color: #dce5ef; background: #131922; }
 * { box-sizing: border-box; }
-html { overflow-y: scroll; scrollbar-gutter: stable; }
-body { margin: 0; min-width: 0; overflow-x: hidden; overflow-y: visible; }
+html { overflow-x: hidden; overflow-y: scroll; scrollbar-gutter: stable; }
+body { margin: 0; min-width: 0; }
 #app { min-height: 100vh; display: flex; flex-direction: column; }
 button, input, select { font: inherit; color: inherit; border: 1px solid #354254; border-radius: 4px; background: #202c3b; }
 button { padding: 7px 13px; cursor: pointer; white-space: nowrap; }
@@ -123,7 +123,8 @@ input[aria-invalid=true] { border-color: #e38474; }
 .field-name { font-size: 11px; color: #aab9cb; }
 .field-message { font-size: 10px; color: #f19b94; overflow-wrap: anywhere; }
 .field-message:empty, .field-message:not(.error) { display: none; }
-.field-help-popup { position: fixed; z-index: 1000; width: max-content; max-width: min(360px, calc(100vw - 16px)); max-height: min(240px, calc(100vh - 16px)); overflow: auto; padding: 12px 14px; border: 1px solid #3b4654; border-radius: 12px; color: #dce5ef; background: #171e28; box-shadow: 0 5px 18px #0009; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.field-help-popup { position: fixed; z-index: 1000; width: max-content; max-width: min(360px, calc(100vw - 16px)); max-height: min(240px, calc(100vh - 16px)); overflow: auto; padding: 12px 14px; border: 1px solid #3b4654; border-radius: 12px; color: #dce5ef; background: #171e28; box-shadow: 0 5px 18px #0009; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; opacity: 0; transform: translateY(3px); transition: opacity .16s ease, transform .16s ease; }
+.field-help-popup.open { opacity: 1; transform: none; }
 .field-help-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .field-help-heading strong { font-size: 13px; font-weight: 500; }
 .field-help-heading code { padding: 2px 7px; border-radius: 999px; color: #e3edf8; background: #303c4b; font: 600 11px/1.45 Consolas, monospace; white-space: nowrap; }
@@ -182,10 +183,12 @@ main { grid-template-columns: minmax(180px, var(--results-width)) 7px minmax(0, 
 .preparation-screen-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .preparation-screen-heading h1 { margin: 0; font-size: 16px; font-weight: 600; }
 .preparation-screen-heading p { margin: 2px 0 0; color: #96a9be; font-size: 11px; overflow-wrap: anywhere; }
-.preparation-screen-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, .85fr); gap: 8px; align-items: start; }
+.preparation-screen-grid { display: grid; gap: 8px; }
 #workbook-preparation-form { display: grid; min-width: 0; }
+.workbook-field-group { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)) auto; gap: 7px 10px; align-items: end; }
+.workbook-field-group .primary { height: 34px; }
 .workbook-field-group, .preparation-results { min-width: 0; padding: 7px; border: 1px solid #2e3e50; border-radius: 4px; background: #1a2431; }
-.workbook-input-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px 10px; }
+.workbook-input-fields { display: contents; }
 .workbook-preparation-field { display: grid; min-width: 0; gap: 3px; }
 .workbook-field-heading { display: flex; align-items: baseline; min-width: 0; color: #aab9cb; font-size: 12px; line-height: 1.4; }
 .workbook-field-label { display: inline; width: auto; min-width: 0; max-width: none; flex: 0 1 auto; color: inherit; overflow-wrap: anywhere; }
@@ -197,16 +200,28 @@ main { grid-template-columns: minmax(180px, var(--results-width)) 7px minmax(0, 
 .workbook-value-field:has(input[aria-invalid=true]) { border-color: #e38474; }
 .workbook-value-field .field-unit { padding-right: 8px; }
 .preparation-results .section-title { margin-bottom: 10px; }
-.preparation-results p { color: #96a9be; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.preparation-result-state { margin: 0; color: #96a9be; font-size: 11px; }
+#preparation-result-body { margin: 0; display: grid; gap: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: start; font-size: 11px; }
+#preparation-result-body > .preparation-result-column { min-width: 0; padding: 7px; border: 1px solid #2e3e50; border-radius: 4px; background: #1a2431; display: grid; gap: 1px; align-content: start; }
+#preparation-result-body .preparation-result-section { margin-bottom: 4px; color: #c2d1e1; font-size: 11px; font-weight: 600; }
+#preparation-result-body .preparation-result-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 1px 5px; margin: 0 -5px; border-radius: 3px; cursor: default; }
+#preparation-result-body .preparation-result-row:hover, #preparation-result-body .preparation-result-row:focus-visible { background: #2a3a4f; outline: none; }
+#preparation-result-body dt { min-width: 0; color: #91a2b7; overflow-wrap: anywhere; }
+#preparation-result-body dd { margin: 0; text-align: right; color: #d6dee8; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; white-space: nowrap; }
+.preparation-result-warnings { margin: 10px 0 0; padding-left: 18px; color: #e3b341; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 #preparation-screen .actions { margin-top: 0; }
+@media (max-width: 1050px) {
+    .workbook-field-group { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; }
+    #preparation-result-body { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 @media (max-width: 850px) {
-    .preparation-screen-grid { grid-template-columns: minmax(0, 1fr); }
-    .workbook-input-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .workbook-field-group { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; }
 }
 @media (max-width: 650px) {
     header { align-items: flex-start; flex-wrap: wrap; }
     .header-actions { flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
     .preparation-screen { padding-inline: 10px; }
     .preparation-screen-heading { align-items: flex-start; }
-    .workbook-input-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .workbook-field-group { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; }
+    #preparation-result-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

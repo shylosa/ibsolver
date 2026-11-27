@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"ibsolver/internal/prepcalc"
 )
 
 const ResultVersion = "demo-v1"
@@ -168,6 +170,7 @@ type Summary struct {
 	Duration          float64            `json:"duration"`
 	Numerical         *NumericalSummary  `json:"numerical,omitempty"`
 	Ballistics        *BallisticsSummary `json:"ballistics,omitempty"`
+	Workbook          *prepcalc.Result   `json:"workbook,omitempty"`
 }
 
 type Run struct {
@@ -187,6 +190,9 @@ func (r Run) Validate() error {
 	}
 	if r.ResultVersion == BallisticsVersion && r.Mode == ModePreparation {
 		return r.validateBallistics()
+	}
+	if r.ResultVersion == WorkbookVersion && r.Mode == ModePreparation {
+		return r.validateWorkbook()
 	}
 	if r.ResultVersion != ResultVersion || r.Mode != ModeDemo || r.Summary.Kind != "DEMO" {
 		return fmt.Errorf("Несумісна версія результатів")

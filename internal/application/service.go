@@ -7,6 +7,7 @@ import (
 
 	"ibsolver/internal/chartdata"
 	"ibsolver/internal/domain"
+	"ibsolver/internal/prepcalc"
 	"ibsolver/internal/storage/sqlite"
 )
 
@@ -80,6 +81,70 @@ func (s *Service) Calculate(ctx context.Context, configurationID int64) (domain.
 	}
 	if err != nil {
 		return state, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	current, err := s.load()
+	if err != nil {
+		return state, err
+	}
+	if current.Active.ID != configurationID || !run.Matches(current.Active) {
+		return current, fmt.Errorf("Параметри змінилися під час розрахунку; результат не записано")
+	}
+	if err = ctx.Err(); err != nil {
+		return current, fmt.Errorf("Розрахунок скасовано: %w", err)
+	}
+	run.ConfigurationID = configurationID
+	run.Summary.ConfigurationName = state.Active.Name
+	if err = s.store.SaveRun(run); err != nil {
+		return current, err
+	}
+	return s.load()
+}
+
+// CalculateWorkbook runs the Диплом.xls preparation kernel (package prepcalc)
+// for the seven workbook fields of the active configuration. The result is a
+// summary-only run: it has no time series and never touches the chart data
+// of other run kinds.
+func (s *Service) CalculateWorkbook(ctx context.Context, configurationID int64) (domain.State, error) {
+	s.mu.Lock()
+	state, err := s.load()
+	if err != nil {
+		s.mu.Unlock()
+		return state, err
+	}
+	if state.Active.ID != configurationID {
+		s.mu.Unlock()
+		return state, fmt.Errorf("Активна конфігурація змінилася")
+	}
+	if state.Active.Mode != domain.ModePreparation {
+		s.mu.Unlock()
+		return state, fmt.Errorf("Підготовчий розрахунок доступний лише в режимі підготовчих даних")
+	}
+	if s.cancel != nil {
+		s.mu.Unlock()
+		return state, fmt.Errorf("Розрахунок уже виконується")
+	}
+	inputs, err := domain.WorkbookInputs(state.Active.Parameters.PreparationWorkbook)
+	if err != nil {
+		s.mu.Unlock()
+		return state, err
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	s.cancel = cancel
+	snapshot := state.Active.Parameters
+	s.mu.Unlock()
+	defer func() { cancel(); s.mu.Lock(); s.cancel = nil; s.mu.Unlock() }()
+
+	result, err := prepcalc.Calculate(inputs, prepcalc.DefaultTable1())
+	if err != nil {
+		return state, err
+	}
+	run := domain.Run{
+		Mode:          domain.ModePreparation,
+		Snapshot:      snapshot,
+		ResultVersion: domain.WorkbookVersion,
+		Summary:       domain.Summary{Kind: "WORKBOOK", Workbook: &result},
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

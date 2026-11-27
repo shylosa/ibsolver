@@ -1,11 +1,12 @@
 import './style.css';
-import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV} from '../wailsjs/go/main/App';
+import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CalculateWorkbook, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV} from '../wailsjs/go/main/App';
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import {preparationFields, workbookPreparationFields, preparationResultPanel, KT_CUSTOM_VALUE, parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation} from './preparation.mjs';
 import {preparationTables} from './preparation-tables.mjs';
 import {renderPreparationTable} from './preparation-table-view.mjs';
 import {externalMetadata} from './external.mjs';
+import {workbookResultSections} from './workbook-results.mjs';
 import {DebouncedTask} from './debounce.mjs';
 
 document.querySelector('#app').innerHTML = `
@@ -73,11 +74,14 @@ document.querySelector('#app').innerHTML = `
         <form id="workbook-preparation-form" class="workbook-preparation-form" novalidate>
             <section class="workbook-field-group" aria-label="Сім полів підготовчих даних">
                 <div id="workbook-input-fields" class="workbook-input-fields"></div>
+                <button id="workbook-calculate" type="button" class="primary">Розрахувати</button>
             </section>
         </form>
         <aside id="preparation-results" class="preparation-results" aria-label="${preparationResultPanel.title}">
             <div class="section-title">${preparationResultPanel.title}</div>
-            <p id="preparation-result-state">${preparationResultPanel.message}</p>
+            <p id="preparation-result-state" class="preparation-result-state">Результатів ще немає</p>
+            <dl id="preparation-result-body" hidden></dl>
+            <ul id="preparation-result-warnings" class="preparation-result-warnings" hidden></ul>
         </aside>
     </div>
     <section id="preparation-reference-section" class="preparation-reference-section" aria-label="Таблиці для довідки">
@@ -106,7 +110,8 @@ const preparationGroups = {
     ro: 3, tg15: 3, ku1: 3, f1: 3, u15: 3, svod: 3,
     pvos: 4, tvos: 4,
 };
-const fieldHelpItems = [];
+let fieldHelpItems = [];
+let resultHelpItems = [];
 for (const field of preparationFields) {
     const {key, technicalId, label, unit, description, options} = field;
     const element = document.createElement('div');
@@ -270,8 +275,8 @@ for (const field of workbookPreparationFields) {
     fieldHelpItems.push({button: helpButton, popup: helpPopup});
 }
 
-function positionFieldHelp(button, popup) {
-    const rect = button.getBoundingClientRect();
+function positionFieldHelp(anchor, popup) {
+    const rect = anchor.getBoundingClientRect();
     const margin = 8, gap = 6;
     const popupRect = popup.getBoundingClientRect();
     const maxLeft = Math.max(margin, window.innerWidth - popupRect.width - margin);
@@ -284,34 +289,40 @@ function positionFieldHelp(button, popup) {
     popup.style.left = `${left}px`;
     popup.style.top = `${top}px`;
 }
-function showFieldHelp(button, popup) {
+function showFieldHelp(anchor, popup) {
+    clearTimeout(popup.hideTimer);
     popup.hidden = false;
-    button.setAttribute('aria-expanded', 'true');
-    positionFieldHelp(button, popup);
+    // Add .open on the next frame so the opacity transition runs from 0.
+    requestAnimationFrame(() => { if (anchor.getAttribute('aria-expanded') === 'true') popup.classList.add('open'); });
+    anchor.setAttribute('aria-expanded', 'true');
+    positionFieldHelp(anchor, popup);
 }
-function hideFieldHelp(button, popup) {
-    popup.hidden = true;
-    button.setAttribute('aria-expanded', 'false');
+function hideFieldHelp(anchor, popup) {
+    anchor.setAttribute('aria-expanded', 'false');
+    popup.classList.remove('open');
+    clearTimeout(popup.hideTimer);
+    popup.hideTimer = setTimeout(() => { popup.hidden = true; }, 170);
 }
-for (const {button, popup} of fieldHelpItems) {
+function wireFieldHelp(anchor, popup) {
     let hovered = false, focused = false;
-    button.addEventListener('mouseenter', () => { hovered = true; showFieldHelp(button, popup); });
-    button.addEventListener('mouseleave', () => {
+    anchor.addEventListener('mouseenter', () => { hovered = true; showFieldHelp(anchor, popup); });
+    anchor.addEventListener('mouseleave', () => {
         hovered = false;
-        hideFieldHelp(button, popup);
+        hideFieldHelp(anchor, popup);
     });
-    button.addEventListener('focus', () => { focused = true; showFieldHelp(button, popup); });
-    button.addEventListener('blur', () => {
+    anchor.addEventListener('focus', () => { focused = true; showFieldHelp(anchor, popup); });
+    anchor.addEventListener('blur', () => {
         focused = false;
-        if (!hovered) hideFieldHelp(button, popup);
+        if (!hovered) hideFieldHelp(anchor, popup);
     });
-    button.addEventListener('keydown', event => {
+    anchor.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
             event.preventDefault();
-            hideFieldHelp(button, popup);
+            hideFieldHelp(anchor, popup);
         }
     });
 }
+for (const {button, popup} of fieldHelpItems) wireFieldHelp(button, popup);
 function repositionFieldHelp() {
     for (const {button, popup} of fieldHelpItems) {
         if (!popup.hidden) positionFieldHelp(button, popup);
@@ -344,11 +355,13 @@ function setBusy(value) {
         if (!el.closest('dialog') && el.id !== 'toggle-parameters') el.disabled = value || el.id === 'cancel';
     });
     $('splitter').setAttribute('aria-disabled', String(value));
-    $('export-csv').disabled = value || !(visibleRun() || externalChart);
+    $('export-csv').disabled = value || !hasChart();
     $('external-metadata').disabled = $('external-delete').disabled = value || !externalChart;
-    $('chart-reset').disabled = value || !(visibleRun() || externalChart);
+    $('chart-reset').disabled = value || !hasChart();
     if (state) updateMode();
 }
+// A workbook run has no time series, so only runs with charted series count.
+function hasChart() { return Boolean(externalChart || visibleRun()?.chart?.series?.length); }
 async function operation(action) {
     if (busy) return;
     delayedSave.flush();
@@ -496,7 +509,73 @@ function resultState(stale = state.stale) {
     if (state.run && state.run.mode !== state.active.mode) {
         return `Збережений запуск іншого режиму: ${state.run.mode}, №${state.run.id}, ${new Date(state.run.createdAt).toLocaleString('uk-UA')}. Виберіть відповідний режим для перегляду.`;
     }
-    return state.run ? (stale ? 'Попередній запуск · параметри змінено' : state.run.summary.kind === 'BALLISTICS' ? 'Збережений балістичний розрахунок' : state.run.summary.kind === 'NUMERICAL' ? 'Збережений чисельний результат' : 'Збережені демонстраційні дані') : 'Результатів ще немає';
+    return state.run ? (stale ? 'Попередній запуск · параметри змінено' : state.run.summary.kind === 'BALLISTICS' ? 'Збережений балістичний розрахунок' : state.run.summary.kind === 'NUMERICAL' ? 'Збережений чисельний результат' : state.run.summary.kind === 'WORKBOOK' ? 'Збережений підготовчий розрахунок' : 'Збережені демонстраційні дані') : 'Результатів ще немає';
+}
+// Workbook runs carry no chart; every result section renders as a bordered
+// column card, with the transfer block F72:F74 first. Hovering a whole result
+// row highlights it and shows its help popup (same styling as input fields).
+let resultHelpSeq = 0;
+function clearResultHelp() {
+    for (const item of resultHelpItems) item.popup.remove();
+    fieldHelpItems = fieldHelpItems.filter(item => !resultHelpItems.includes(item));
+    resultHelpItems = [];
+}
+function attachResultHelp(rowElement, term, help) {
+    const popup = document.createElement('div');
+    popup.id = `workbook-result-help-${resultHelpSeq++}`;
+    popup.className = 'field-help-popup';
+    popup.setAttribute('role', 'tooltip');
+    popup.hidden = true;
+    const heading = document.createElement('div');
+    heading.className = 'field-help-heading';
+    const title = document.createElement('strong');
+    title.textContent = help.title;
+    const code = document.createElement('code');
+    code.textContent = help.code;
+    heading.append(title, code);
+    const description = document.createElement('p');
+    description.textContent = help.description;
+    popup.append(heading, description);
+    rowElement.setAttribute('aria-describedby', popup.id);
+    rowElement.tabIndex = 0;
+    document.body.append(popup);
+    wireFieldHelp(rowElement, popup);
+    const item = {button: rowElement, popup};
+    fieldHelpItems.push(item);
+    resultHelpItems.push(item);
+}
+function renderWorkbookResults(run) {
+    const workbook = run?.summary?.kind === 'WORKBOOK' ? run.summary.workbook : null;
+    const empty = $('preparation-result-state');
+    const body = $('preparation-result-body'), warnings = $('preparation-result-warnings');
+    clearResultHelp();
+    body.replaceChildren(...workbookResultSections(workbook).map(section => {
+        const group = document.createElement('div'), title = document.createElement('dt');
+        group.className = 'preparation-result-column';
+        title.className = 'preparation-result-section';
+        title.textContent = section.title;
+        group.append(title);
+        for (const [term, value, help] of section.rows) {
+            const row = document.createElement('div');
+            row.className = 'preparation-result-row';
+            const dt = document.createElement('dt'), dd = document.createElement('dd');
+            dt.textContent = term;
+            dd.textContent = value;
+            row.append(dt, dd);
+            if (help) attachResultHelp(row, term, help);
+            group.append(row);
+        }
+        return group;
+    }));
+    body.hidden = !workbook;
+    empty.hidden = Boolean(workbook);
+    const list = workbook?.warnings ?? [];
+    warnings.replaceChildren(...list.map(message => {
+        const item = document.createElement('li');
+        item.textContent = message;
+        return item;
+    }));
+    warnings.hidden = list.length === 0;
 }
 function display(next) {
     state = next; dirty = false; externalChart = null; revision++;
@@ -531,8 +610,9 @@ function display(next) {
     $('result-state').classList.toggle('stale', state.stale);
     const numerical = run?.summary.kind === 'NUMERICAL';
     const ballistics = run?.summary.kind === 'BALLISTICS';
-    $('result-kind').textContent = state.active.mode === 'preparation' ? (ballistics ? 'БАЛІСТИКА' : 'ДАНІ') : numerical || !run ? 'RK45' : 'DEMO';
-    $('chart-label').textContent = run ? `${ballistics ? 'Внутрішня балістика · OZVB' : numerical ? 'Чисельний приклад · RK45' : 'DEMO'} · запуск №${run.id}` : 'Збережених даних немає';
+    const workbook = run?.summary.kind === 'WORKBOOK';
+    $('result-kind').textContent = state.active.mode === 'preparation' ? (workbook ? 'КНИГА' : ballistics ? 'БАЛІСТИКА' : 'ДАНІ') : numerical || !run ? 'RK45' : 'DEMO';
+    $('chart-label').textContent = run ? `${workbook ? 'Книга Диплом.xls' : ballistics ? 'Внутрішня балістика · OZVB' : numerical ? 'Чисельний приклад · RK45' : 'DEMO'} · запуск №${run.id}` : 'Збережених даних немає';
     $('summary').replaceChildren();
     $('statistics').replaceChildren();
     $('statistics').hidden = $('statistics-title').hidden = !numerical;
@@ -549,10 +629,10 @@ function display(next) {
         }
         const rows = [
             [run.summary.configurationName ? 'Назва запуску' : 'Поточна назва', run.summary.configurationName || state.active.name],
-            ['Режим запуску', run.mode === 'preparation' ? 'Балістика (OZVB)' : run.mode === 'oscillator' ? 'Осцилятор' : 'DEMO'],
-            ['Точок / серію', String(run.summary.samples)],
+            ['Режим запуску', run.mode === 'preparation' ? (workbook ? 'Підготовчі дані · книга' : 'Балістика (OZVB)') : run.mode === 'oscillator' ? 'Осцилятор' : 'DEMO'],
+            ['Точок / серію', String(run.summary.samples ?? 0)],
             [durationTerm, durationVal],
-            ['Серій', String(run.chart.series.length)],
+            ['Серій', String(run.chart?.series?.length ?? 0)],
             ['Збережено', new Date(run.createdAt).toLocaleString('uk-UA')]
         ];
         if (ballistics && run.summary.ballistics) {
@@ -591,6 +671,7 @@ function display(next) {
             (['Кроки / відхилено', 'Обчислень RHS', 'Допуски абс. / відн.'].includes(key) ? $('statistics') : $('summary')).append(term, description);
         }
     }
+    renderWorkbookResults(run);
     chart.set(run?.chart || null, state.settings);
     status(state.warning || 'Робочий стан відновлено з бази даних.');
 }
@@ -789,6 +870,14 @@ async function runCalculate() {
 }
 $('calculate').addEventListener('click', () => operation(runCalculate));
 
+async function runWorkbookCalculate() {
+    if (dirty) await save();
+    status('Виконується підготовчий розрахунок за книгою Диплом.xls…');
+    display(await CalculateWorkbook(state.active.id));
+    status('Підготовчий розрахунок завершено та збережено. Часових рядів він не створює.');
+}
+$('workbook-calculate').addEventListener('click', () => operation(runWorkbookCalculate));
+
 function toggleParameters(force) {
     const section = document.querySelector('.parameters');
     if (!section) return;
@@ -924,6 +1013,7 @@ function showExternal(result) {
     $('result-state').classList.remove('stale');
     $('chart-label').textContent = `Зовнішній CSV · ${result.name}`;
     $('statistics').hidden = $('statistics-title').hidden = true;
+    renderWorkbookResults(null);
     fillMetadata($('summary'), [['Назва', result.name], ...externalMetadata(result)]);
 }
 function fillMetadata(element, rows) {

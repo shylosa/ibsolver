@@ -12,12 +12,9 @@ test('historical workbook editor exposes exactly seven inputs and confirmed unit
     }
 });
 
-test('preparation result panel stays unavailable and never presents calculator values', () => {
-    assert.deepEqual(preparationResultPanel, {
-        title: 'Результати підготовки',
-        message: "Підготовчий розрахунок поки недоступний. Введені значення можна зберегти. Результати з'являться тут після підключення розрахункового модуля.",
-    });
-    assert.deepEqual(Object.keys(preparationResultPanel), ['title', 'message']);
+test('preparation result panel has a title only, without instruction text', () => {
+    assert.deepEqual(preparationResultPanel, {title: 'Результати підготовки'});
+    assert.deepEqual(Object.keys(preparationResultPanel), ['title']);
 });
 
 test('workbook editor parser accepts finite locale numbers without inferred units', () => {

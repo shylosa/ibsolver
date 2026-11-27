@@ -56,6 +56,15 @@ func (a *App) Calculate(configurationID int64) (domain.State, error) {
 	return a.service.Calculate(a.ctx, configurationID)
 }
 
+// CalculateWorkbook runs the Диплом.xls preparation kernel for the active
+// configuration; the result is a summary-only run without time series.
+func (a *App) CalculateWorkbook(configurationID int64) (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.CalculateWorkbook(a.ctx, configurationID)
+}
+
 func (a *App) CancelCalculation() {
 	if a.ready() == nil {
 		a.service.CancelCalculation()

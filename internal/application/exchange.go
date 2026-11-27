@@ -200,6 +200,9 @@ func (s *Service) ExportCSV(id int64) ([]byte, error) {
 }
 
 func exportRunCSV(run domain.Run) ([]byte, error) {
+	if run.ResultVersion == domain.WorkbookVersion {
+		return nil, fmt.Errorf("Запуск підготовчих даних не має часових рядів для експорту CSV")
+	}
 	if run.Mode != domain.ModePreparation {
 		return exportChartCSV(run.Chart)
 	}

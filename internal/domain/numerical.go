@@ -67,6 +67,10 @@ func (r Run) Matches(c Configuration) bool {
 		return r.Snapshot.Oscillator != nil && c.Parameters.Oscillator != nil && *r.Snapshot.Oscillator == *c.Parameters.Oscillator
 	}
 	if r.Mode == ModePreparation {
+		if r.ResultVersion == WorkbookVersion {
+			return r.Snapshot.PreparationWorkbook != nil && c.Parameters.PreparationWorkbook != nil &&
+				r.Snapshot.PreparationWorkbook.Equal(*c.Parameters.PreparationWorkbook)
+		}
 		return r.Snapshot.Preparation != nil && c.Parameters.Preparation != nil && r.Snapshot.Preparation.Equal(*c.Parameters.Preparation)
 	}
 	return false

@@ -150,11 +150,17 @@ test('preparation screen embeds tables without visible unknown-unit warnings', (
     assert.match(main, /document\.body\.classList\.toggle\('preparation-screen-active', active\)/);
     assert.match(main, /\$\('mode'\)\.value = state\.active\.mode/);
     assert.doesNotMatch(preparationScreenTransition, /\$\('mode'\)\.value\s*=/);
-    assert.match(style, /html \{[^}]*overflow-y: scroll;[^}]*scrollbar-gutter: stable;/);
-    assert.match(style, /body \{[^}]*overflow-x: hidden;[^}]*overflow-y: visible;/);
+    assert.match(style, /html \{[^}]*overflow-x: hidden;[^}]*overflow-y: scroll;[^}]*scrollbar-gutter: stable;/);
+    // body must stay a non-scroll container, otherwise position: sticky on the
+    // header binds to body and the header scrolls away with the viewport.
+    assert.doesNotMatch(style, /body \{[^}]*overflow/);
+    assert.match(style, /header \{[^}]*position: sticky;[^}]*top: 0;/);
     assert.match(style, /\.reference-table-scroll \{[^}]*overflow-x: auto;/);
     assert.match(style, /\.reference-table-content \{[^}]*min-height:\s*540px;/);
     assert.doesNotMatch(style, /\.reference-table-content \{[^}]*overflow-y:/);
-    assert.match(style, /\.workbook-input-fields \{[^}]*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
+    // Seven inputs share one row with the calculate button (8th grid track).
+    assert.match(style, /\.workbook-field-group \{[^}]*repeat\(7,\s*minmax\(0,\s*1fr\)\)\s*auto;/);
+    assert.match(style, /\.workbook-input-fields \{[^}]*display:\s*contents;/);
+    assert.match(style, /#preparation-result-body \{[^}]*repeat\(6,\s*minmax\(0,\s*1fr\)\)/);
     assert.doesNotMatch(style, /\.preparation-screen \{[^}]*overflow:\s*hidden/);
 });
