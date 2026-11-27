@@ -11,9 +11,6 @@ input, select { padding: 6px 8px; min-width: 0; }
 input:invalid { border-color: #e38474; }
 :focus-visible { outline: 2px solid #60c5fa; outline-offset: 2px; }
 header { position: sticky; top: 0; z-index: 10; min-height: 48px; display: flex; align-items: center; gap: 16px; padding: 6px 18px; border-bottom: 1px solid #2d3949; background: #19222e; }
-.brand { font-size: 21px; font-weight: 650; letter-spacing: -.5px; }
-.brand > span { font-weight: 350; color: #a8c5dc; }
-.brand small { display: inline-block; margin-left: 14px; color: #7f93a8; font-size: 9px; font-weight: 500; letter-spacing: 1.5px; vertical-align: middle; }
 .header-actions { flex: 1 1 auto; min-width: 0; margin-left: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .header-primary-actions, .header-navigation-actions { display: flex; flex: none; align-items: center; gap: 8px; }
 .header-data-actions, .header-calculation-actions { display: flex; flex: none; align-items: center; gap: 8px; }
@@ -68,7 +65,6 @@ canvas { position: absolute; width: 100%; height: 100%; }
 footer { display: flex; justify-content: space-between; gap: 20px; padding: 7px 18px; font-size: 11px; color: #95a7ba; border-top: 1px solid #344254; background: #19222e; }
 #status { overflow-wrap: anywhere; } .error { color: #f19b94; }
 @media (max-width: 1050px) {
-    .brand small { display: none; }
     header { gap: 12px; }
     .header-actions, .header-primary-actions, .header-navigation-actions, .header-data-actions, .header-calculation-actions { gap: 6px; }
     .header-actions button { padding-inline: 7px; font-size: 11px; }
@@ -147,6 +143,16 @@ main { grid-template-columns: minmax(180px, var(--results-width)) 7px minmax(0, 
 #external-dialog form { display: block; }
 #external-dialog label { max-width: none; margin-bottom: 12px; }
 #external-dialog dl { grid-template-columns: minmax(80px, 1fr) minmax(0, 3fr); }
+#transfer-dialog { width: min(640px, calc(100vw - 48px)); max-height: calc(100vh - 48px); overflow-y: auto; color: #dce5ef; background: #19222e; border: 1px solid #6597bc; border-radius: 6px; }
+#transfer-dialog::backdrop { background: #0008; }
+#transfer-dialog form { display: flex; flex-wrap: wrap; gap: 6px; }
+#transfer-dialog .transfer-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 10px 0 14px; font-size: 12px; line-height: 1.45; }
+#transfer-dialog .transfer-table th, #transfer-dialog .transfer-table td { padding: 6px 8px; border: 1px solid #354254; text-align: left; vertical-align: top; word-break: break-word; }
+#transfer-dialog .transfer-table thead th { color: #e3edf8; background: #253447; font-weight: 700; }
+#transfer-dialog .transfer-table tbody th { font-weight: 600; color: #c2d1e1; }
+#transfer-dialog .transfer-table td { font-family: Consolas, monospace; }
+.preparation-transfer-actions { display: flex; justify-content: stretch; margin-top: 6px; padding-top: 6px; border-top: 1px solid #2e3e50; }
+.preparation-transfer-actions button { width: 100%; font-size: 11px; padding: 5px 7px; }
 
 .preparation-reference-section { width: 100%; min-width: 0; margin-top: 8px; border: 1px solid #2e3e50; border-radius: 4px; background: #1a2431; }
 .preparation-reference-body { min-width: 0; }

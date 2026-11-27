@@ -7,11 +7,11 @@ import {preparationTables} from './preparation-tables.mjs';
 import {renderPreparationTable} from './preparation-table-view.mjs';
 import {externalMetadata} from './external.mjs';
 import {workbookResultSections} from './workbook-results.mjs';
+import {workbookTransferMatches, workbookTransferRows} from './workbook-transfer.mjs';
 import {DebouncedTask} from './debounce.mjs';
 
 document.querySelector('#app').innerHTML = `
-<header><div class="brand">IB<span>Solver</span><small>ІНЖЕНЕРНИЙ РОБОЧИЙ ПРОСТІР</small></div>
-    <div class="header-actions">
+<header><div class="header-actions">
         <div class="header-primary-actions">
             <div class="header-data-actions">
                 <button id="reload" type="button">Відновити з БД</button>
@@ -100,6 +100,7 @@ document.querySelector('#app').innerHTML = `
         <div class="canvas-wrap"><canvas id="chart" aria-label="Спільне поле нормалізованих часових рядів"></canvas></div><div id="cursor" aria-live="off"></div></section></main>
 <dialog id="discard-dialog"><p>Не вдалося зберегти поточну чернетку. Поверніться до редагування або явно відкиньте незбережені зміни.</p><form method="dialog"><button value="return" autofocus>Повернутися до редагування</button><button value="discard">Відкинути незбережені зміни</button></form></dialog>
 <dialog id="external-dialog"><h3 id="external-dialog-title"></h3><p>Числові часові ряди з CSV. Фізичний зміст визначає джерело даних.</p><dl id="external-details"></dl><form method="dialog"><label>Назва<input id="external-name" maxlength="120" required></label><div class="actions"><button id="external-confirm" value="save">Зберегти результат</button><button value="cancel" formnovalidate autofocus>Закрити / скасувати</button></div></form></dialog>
+<dialog id="transfer-dialog"><h3>Передати результати на робочий екран</h3><p>Будуть змінені лише перелічені поля підготовчих даних. Інші параметри конфігурації та збережені результати розрахунків не змінюються; основний розрахунок не запускається.</p><table class="transfer-table"><thead><tr><th scope="col">Поле</th><th scope="col">Поточне значення</th><th scope="col">Нове значення</th></tr></thead><tbody id="transfer-rows"></tbody></table><form method="dialog"><button value="transfer" class="primary" autofocus>Передати на робочий екран</button><button value="cancel" formnovalidate>Скасувати</button></form></dialog>
 <footer><span id="status" role="status">Відкриття бази даних…</span><span>SQLite · локальне збереження</span></footer>`;
 
 const $ = id => document.getElementById(id);
@@ -359,6 +360,7 @@ function setBusy(value) {
     $('external-metadata').disabled = $('external-delete').disabled = value || !externalChart;
     $('chart-reset').disabled = value || !hasChart();
     if (state) updateMode();
+    updateTransferAvailability();
 }
 // A workbook run has no time series, so only runs with charted series count.
 function hasChart() { return Boolean(externalChart || visibleRun()?.chart?.series?.length); }
@@ -515,6 +517,7 @@ function resultState(stale = state.stale) {
 // column card, with the transfer block F72:F74 first. Hovering a whole result
 // row highlights it and shows its help popup (same styling as input fields).
 let resultHelpSeq = 0;
+let transferButton = null;
 function clearResultHelp() {
     for (const item of resultHelpItems) item.popup.remove();
     fieldHelpItems = fieldHelpItems.filter(item => !resultHelpItems.includes(item));
@@ -544,12 +547,32 @@ function attachResultHelp(rowElement, term, help) {
     fieldHelpItems.push(item);
     resultHelpItems.push(item);
 }
+// Live values of the seven workbook inputs as entered right now; throws when
+// any field holds an unfinished or invalid number.
+function liveWorkbookValues() {
+    const values = {};
+    for (const {key} of workbookPreparationFields) values[key] = parseWorkbookPreparation($(`workbook-${key}`).value);
+    return values;
+}
+// The transfer button is enabled only while the shown WORKBOOK run was
+// calculated from exactly the seven inputs currently in the form.
+function updateTransferAvailability() {
+    if (!transferButton) return;
+    const snapshot = visibleRun()?.snapshot?.preparationWorkbook;
+    let matches = false;
+    if (snapshot) {
+        try { matches = workbookTransferMatches(snapshot, liveWorkbookValues()); } catch { matches = false; }
+    }
+    transferButton.disabled = !matches;
+    transferButton.title = matches ? '' : 'Доступно, коли показаний результат відповідає поточним значенням семи полів підготовчих даних.';
+}
 function renderWorkbookResults(run) {
     const workbook = run?.summary?.kind === 'WORKBOOK' ? run.summary.workbook : null;
     const empty = $('preparation-result-state');
     const body = $('preparation-result-body'), warnings = $('preparation-result-warnings');
     clearResultHelp();
-    body.replaceChildren(...workbookResultSections(workbook).map(section => {
+    transferButton = null;
+    body.replaceChildren(...workbookResultSections(workbook).map((section, index) => {
         const group = document.createElement('div'), title = document.createElement('dt');
         group.className = 'preparation-result-column';
         title.className = 'preparation-result-section';
@@ -565,10 +588,24 @@ function renderWorkbookResults(run) {
             if (help) attachResultHelp(row, term, help);
             group.append(row);
         }
+        if (index === 0 && workbook) {
+            const container = document.createElement('div');
+            container.className = 'preparation-transfer-actions';
+            transferButton = document.createElement('button');
+            transferButton.id = 'workbook-transfer';
+            transferButton.type = 'button';
+            transferButton.textContent = 'Передати на робочий екран';
+            // The button is recreated on every render, so its listener is
+            // attached here and never from module scope.
+            transferButton.addEventListener('click', () => operation(runWorkbookTransfer));
+            container.append(transferButton);
+            group.append(container);
+        }
         return group;
     }));
     body.hidden = !workbook;
     empty.hidden = Boolean(workbook);
+    updateTransferAvailability();
     const list = workbook?.warnings ?? [];
     warnings.replaceChildren(...list.map(message => {
         const item = document.createElement('li');
@@ -740,6 +777,7 @@ function markDirty(field) {
         $('result-state').textContent = changed ? 'Попередній запуск · параметри редагуються' : resultState(false);
         $('result-state').classList.toggle('stale', changed);
     }
+    updateTransferAvailability();
 }
 // All writes share one queue. A response acknowledges only its captured revision.
 function queueSave() {
@@ -877,6 +915,51 @@ async function runWorkbookCalculate() {
     status('Підготовчий розрахунок завершено та збережено. Часових рядів він не створює.');
 }
 $('workbook-calculate').addEventListener('click', () => operation(runWorkbookCalculate));
+
+// Transfer of the workbook block F72:F74 onto the working screen is an
+// explicit, confirmed action: it rewrites only w0, pmax and lc, keeps every
+// other parameter and stored run untouched, and never starts a calculation.
+// Wired from the button inside renderWorkbookResults; the button does not
+// exist at module scope.
+async function runWorkbookTransfer() {
+    const run = visibleRun();
+    const snapshot = run?.summary?.kind === 'WORKBOOK' ? run.snapshot.preparationWorkbook : null;
+    let current = null;
+    try { current = liveWorkbookValues(); } catch { current = null; }
+    const rows = current && workbookTransferMatches(snapshot, current)
+        ? workbookTransferRows(run?.summary?.workbook?.transfer, current) : [];
+    if (!rows.length) {
+        status('Передачу скасовано: результат не відповідає поточним підготовчим даним.', true);
+        return;
+    }
+    const body = $('transfer-rows');
+    body.replaceChildren(...rows.map(row => {
+        const tr = document.createElement('tr');
+        const field = document.createElement('th');
+        field.scope = 'row';
+        field.textContent = `${row.technicalId} - ${row.label}, ${row.unit}`;
+        const current = document.createElement('td');
+        const next = document.createElement('td');
+        current.textContent = row.currentText;
+        next.textContent = row.newText;
+        tr.append(field, current, next);
+        return tr;
+    }));
+    const dialog = $('transfer-dialog');
+    dialog.returnValue = 'cancel';
+    const choice = new Promise(resolve => dialog.addEventListener('close', () => resolve(dialog.returnValue), {once: true}));
+    dialog.showModal();
+    if (await choice !== 'transfer') { status('Передачу скасовано. Значення не змінено.'); return; }
+    for (const row of rows) {
+        const field = $('p-' + row.key);
+        field.value = displayPreparation(row.newStored, row.key);
+        try { readPreparationField(row.key); } catch {}
+        markDirty(field);
+    }
+    setPreparationScreen(false);
+    await save();
+    status('Значення W0, pm, LS передано на робочий екран. Основний розрахунок не запущено.');
+}
 
 function toggleParameters(force) {
     const section = document.querySelector('.parameters');
