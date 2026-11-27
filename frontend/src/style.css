@@ -90,7 +90,6 @@ input[aria-invalid=true] { border-color: #e38474; }
 .chart-title button { padding: 3px 7px; font-size: 11px; }
 #statistics-title { font-size: 12px; color: #aab9cb; }
 .configuration-row { flex-wrap: wrap; }
-body.preparation-screen-active #mode-field { display: none; }
 @media (max-width: 850px) { .numerical-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); } #save-state { margin-left: 0; } aside { padding: 12px 10px; } }
 @media (max-height: 650px) {
     #legend { max-height: 52px; overflow-y: auto; padding-bottom: 4px; }
@@ -149,8 +148,7 @@ main { grid-template-columns: minmax(180px, var(--results-width)) 7px minmax(0, 
 #external-dialog dl { grid-template-columns: minmax(80px, 1fr) minmax(0, 3fr); }
 
 .preparation-reference-section { width: 100%; min-width: 0; margin-top: 8px; border: 1px solid #2e3e50; border-radius: 4px; background: #1a2431; }
-.preparation-reference-title { margin: 0; padding: 6px 10px 4px; color: #c2d1e1; font-size: 12px; font-weight: 600; }
-.preparation-reference-body { min-width: 0; border-top: 1px solid #2e3e50; }
+.preparation-reference-body { min-width: 0; }
 .reference-tabs { display: flex; flex: none; gap: 6px; overflow-x: auto; max-width: 100%; padding: 6px 10px 0; border-bottom: 1px solid #354254; }
 .reference-tabs [role=tab] { border-radius: 4px 4px 0 0; color: #aab9cb; background: #202c3b; }
 .reference-tabs [role=tab][aria-selected=true] { border-color: #6597bc; color: #e3edf8; background: #29394b; }

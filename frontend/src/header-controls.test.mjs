@@ -43,6 +43,17 @@ test('screen navigation reuses a fixed-size right-aligned button without changin
     assert.match(main, /\$\('mode'\)\.value = state\.active\.mode/);
 });
 
+test('mode remains internal and hidden while loaded configuration mode drives the UI', () => {
+    assert.match(main, /<select id="mode" hidden aria-hidden="true" tabindex="-1">/);
+    assert.doesNotMatch(main, /<label[^>]*>Режим/);
+    assert.match(main, /\$\('mode'\)\.value = state\.active\.mode/);
+    assert.match(main, /\$\('configurations'\)\.addEventListener\('change'/);
+    assert.match(main, /display\(await SaveSettings\(\{...state\.settings, activeConfigurationId: id\}\)\)/);
+    assert.match(main, /\$\('mode'\)\.value = state\.active\.mode/);
+    assert.match(main, /mode === 'demo'/);
+    assert.match(main, /mode === 'oscillator'/);
+});
+
 test('toolbar commands follow screen, mode, dirty, busy, and parameter-collapse state', () => {
     assert.match(main, /\$\('save'\)\.disabled = busy \|\| !dirty/);
     assert.match(main, /\$\('calculate'\)\.hidden = preparationScreen \|\| mode === 'demo'/);

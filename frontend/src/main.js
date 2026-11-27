@@ -29,7 +29,7 @@ document.querySelector('#app').innerHTML = `
     </div></header>
 <section class="parameters" aria-label="Параметри конфігурації">
     <div class="configuration-row"><label>Конфігурація<select id="configurations"></select></label>
-        <label id="mode-field">Режим<select id="mode"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option><option value="demo">DEMO · інтерфейс</option></select></label>
+        <select id="mode" hidden aria-hidden="true" tabindex="-1"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option><option value="demo">DEMO · інтерфейс</option></select>
         <label class="name-field">Назва<input id="name" maxlength="120" required></label><button id="new">Нова</button>
         <button id="import-json">Імпорт JSON</button><button id="export-json">Експорт JSON</button><span id="save-state" role="status"></span></div>
     <form id="inputs" novalidate>    <div id="preparation-fields">
@@ -80,8 +80,7 @@ document.querySelector('#app').innerHTML = `
             <p id="preparation-result-state">${preparationResultPanel.message}</p>
         </aside>
     </div>
-    <section id="preparation-reference-section" class="preparation-reference-section" aria-labelledby="preparation-reference-title">
-        <h2 id="preparation-reference-title" class="preparation-reference-title">Довідкові таблиці</h2>
+    <section id="preparation-reference-section" class="preparation-reference-section" aria-label="Таблиці для довідки">
         <div id="preparation-reference-body" class="preparation-reference-body">
             <div id="preparation-table-tabs" class="reference-tabs" role="tablist" aria-label="Довідкові таблиці"></div>
             <section id="preparation-table-content" class="reference-table-content" role="tabpanel" tabindex="0"></section>

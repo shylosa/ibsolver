@@ -129,11 +129,13 @@ test('preparation screen embeds tables without visible unknown-unit warnings', (
     assert.doesNotMatch(main, /preparation-reference-toggle|preparation-reference-icon|preparation-reference-body"[^>]*hidden/);
     assert.doesNotMatch(main, /preparation-configuration|Конфігурація: \$\{state\.active\.name\}/);
     assert.doesNotMatch(style, /workbook-unit-note|workbook-unknown-unit|#preparation-tables-dialog/);
+    assert.doesNotMatch(main, /preparation-reference-title|>Довідкові таблиці<\/h2>/);
+    assert.doesNotMatch(style, /\.preparation-reference-title/);
     assert.doesNotMatch(tableView, /reference-table-title|align-self:\s*center/);
 
     assert.match(main, /id="preparation-reference-section"/);
-    assert.match(main, /id="preparation-reference-title"/);
-    assert.match(main, />Довідкові таблиці<\/h2>/);
+    assert.match(main, /id="preparation-reference-section"[^>]*aria-label="Таблиці для довідки"/);
+    assert.match(main, /id="preparation-reference-body"[^>]*>\s*<div id="preparation-table-tabs"/);
     assert.doesNotMatch(main, /id="preparation-reference-body"[^>]*hidden/);
     assert.match(main, /id="preparation-nav"[^>]*class="header-nav-button"/);
     assert.match(main, /id="preparation-nav"[\s\S]*?\$\('preparation-nav'\)\.textContent = preparationScreen \? 'Робочий екран' : 'Підготовчі дані'/);
@@ -143,8 +145,8 @@ test('preparation screen embeds tables without visible unknown-unit warnings', (
     assert.match(main, /document\.getElementById\('workbook-input-fields'\)\.append\(element\)/);
     assert.match(main, /id="preparation-table-tabs"[^>]*role="tablist"/);
     assert.match(main, /id="preparation-table-content"[^>]*role="tabpanel"/);
-    assert.match(main, /<label id="mode-field">Режим<select id="mode"/);
-    assert.match(style, /body\.preparation-screen-active #mode-field \{ display:\s*none; \}/);
+    assert.match(main, /<select id="mode" hidden aria-hidden="true" tabindex="-1">/);
+    assert.doesNotMatch(main, /Режим<\/label>/);
     assert.match(main, /document\.body\.classList\.toggle\('preparation-screen-active', active\)/);
     assert.match(main, /\$\('mode'\)\.value = state\.active\.mode/);
     assert.doesNotMatch(preparationScreenTransition, /\$\('mode'\)\.value\s*=/);
