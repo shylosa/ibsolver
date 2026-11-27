@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 
 // Import the browser module without adding a package-wide module convention.
 const source = await readFile(new URL('./chart.js', import.meta.url), 'utf8');
-const {normalizationDivisor, seriesPreference, verticalLimit, formatAxisValue, chartTitle, valueRange, nearestIndex, clampRange, TimeSeriesChart} = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const {normalizationDivisor, seriesPreference, verticalLimit, formatAxisValue, percentTickStep, formatXAxisTick, valueRange, nearestIndex, clampRange, TimeSeriesChart} = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 
 test('automatic normalization handles zero, negative and constant series', () => {
     for (const [values, expected] of [[[0,0],1],[[-3,-3],3],[[2,2],2],[[-7,2],7]]) {
@@ -22,19 +22,47 @@ test('reference normalization never follows the actual maximum', () => {
     for (const reference of [0,-2,NaN,Infinity,-Infinity]) assert.throws(() => normalizationDivisor({values:[1],reference}));
 });
 
-test('Excel-style axis labels and titles use series identities', () => {
+test('Excel-style axis labels use series identities', () => {
     assert.equal(formatAxisValue(300000000), '3,00E+08');
     assert.equal(formatAxisValue(0), '0,00');
     assert.equal(formatAxisValue(2.5), '2,50');
-    assert.equal(chartTitle([{id:'preparation:p'}, {id:'preparation:l'}]), 'Тиск і переміщення від часу');
-    assert.equal(chartTitle([{id:'oscillator:position'}]), 'Коливання');
 });
 
-test('different units calculate independent positive chart ranges', () => {
-    assert.deepEqual(valueRange({values:[0,100,250]}, 250, 1), [0,262.5]);
+test('axis range is the normalized percent of the series divisor', () => {
+    assert.deepEqual(valueRange({values:[0,100,250]}, 250, 1), [0,105]);
     const travelRange = valueRange({values:[0,.01,.016]}, .016, 1);
     assert.equal(travelRange[0], 0);
-    assert(Math.abs(travelRange[1] - .0168) < 1e-12);
+    assert(Math.abs(travelRange[1] - 105) < 1e-9);
+    assert.deepEqual(valueRange({values:[100]}, 100, 2), [0,210]);
+    const negative = valueRange({values:[-50,50]}, 100, 1);
+    assert(Math.abs(negative[0] + 55) < 1e-9);
+    assert(Math.abs(negative[1] - 55) < 1e-9);
+});
+
+test('chart draws one percent axis without secondary or unit labels', () => {
+    // Right-axis tick labels.
+    assert.doesNotMatch(source, /left \+ pw \+ 10/);
+    // Rotated right-side unit label and rotated left-side unit label.
+    assert.doesNotMatch(source, /translate\(w - 7/);
+    // The only rotated left label is the axis name carrying the percent sign.
+    assert.match(source, /c\.translate\(13, top \+ ph \/ 2\)[\s\S]*?fillText\('% від max'/);
+    // Tick labels carry no percent sign; only the axis name does.
+    assert.doesNotMatch(source, /\}%`/);
+    // No chart title and no standing explanation line above the cursor.
+    assert.doesNotMatch(source, /chartTitle/);
+    assert.doesNotMatch(source, /Кожна крива/);
+});
+
+test('y ticks step over multiples of 25, x labels use one decimal digit', () => {
+    assert.equal(percentTickStep(105), 25);
+    assert.equal(percentTickStep(8 * 25), 25);
+    assert.equal(percentTickStep(1000), 200);
+    assert.equal(percentTickStep(1), 25);
+    assert.equal(formatXAxisTick(0), '0,0');
+    assert.equal(formatXAxisTick(4), '4,0');
+    assert.equal(formatXAxisTick(15.2), '15,2');
+    assert.equal(formatXAxisTick(100), '100,0');
+    assert.equal(formatXAxisTick(Number.NaN), '—');
 });
 
 test('preferences follow IDs and preserve all-hidden legacy settings', () => {

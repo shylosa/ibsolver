@@ -82,7 +82,11 @@ test('main.js wires the transfer button, dialog and safety rules', () => {
         main.indexOf('function toggleParameters('),
     );
     assert.ok(handler.length > 0);
-    assert.match(handler, /workbookTransferMatches\(snapshot, current\)/);
+    // Matching gates on the seven entered inputs; the dialog's "current"
+    // column comes from the working-screen preparation fields being replaced.
+    assert.match(handler, /workbookTransferMatches\(snapshot, entered\)/);
+    assert.match(handler, /const current = state\?\.active\?\.parameters\?\.preparation \?\? null/);
+    assert.match(handler, /workbookTransferRows\(run\?\.summary\?\.workbook\?\.transfer, current\)/);
     assert.match(handler, /\$\(\'p-\' \+ row\.key\)/);
     assert.match(handler, /setPreparationScreen\(false\)/);
     assert.match(handler, /await save\(\)/);

@@ -29,21 +29,21 @@ export function formatAxisValue(value) {
     return value.toFixed(2).replace('.', ',');
 }
 
-export function chartTitle(series) {
-    const ids = new Set((series || []).map(item => item.id));
-    if ([...ids].some(id => id.startsWith('preparation:'))) {
-        if (ids.has('preparation:p') && ids.has('preparation:l')) return 'Тиск і переміщення від часу';
-        if (ids.has('preparation:p')) return 'Давлення від часу';
-        if (ids.has('preparation:l')) return 'Переміщення від часу';
-        return 'Балістичні часові ряди';
-    }
-    if ([...ids].some(id => id.startsWith('oscillator:'))) return 'Коливання';
-    if ([...ids].some(id => id.startsWith('demo:'))) return 'Демонстраційні криві';
-    return 'Часові ряди';
+// Y grid steps stay on multiples of 25 (25, 50, 75, 100, ...); the step only
+// doubles when the axis range grows past eight labels.
+export function percentTickStep(span) {
+    let step = 25;
+    while (span / step > 8) step *= 2;
+    return step;
+}
+
+// Horizontal axis labels always carry exactly one decimal digit.
+export function formatXAxisTick(ms) {
+    return Number.isFinite(ms) ? ms.toFixed(1).replace('.', ',') : '—';
 }
 
 export function valueRange(series, divisor, scale) {
-    const values = (series.values || []).map(value => value * scale).filter(Number.isFinite);
+    const values = (series.values || []).map(value => value / divisor * scale * 100).filter(Number.isFinite);
     if (!values.length) return [0, 1];
     let min = Math.min(0, ...values);
     let max = Math.max(0, ...values);
@@ -92,7 +92,7 @@ export class TimeSeriesChart {
     fraction(event) {
         const rect = this.canvas.getBoundingClientRect();
         const x = event.clientX - rect.left, y = event.clientY - rect.top;
-        return x < 68 || x > rect.width - 22 || y < 42 || y > rect.height - 44 ? null : (x - 68) / Math.max(1, rect.width - 90);
+        return x < 68 || x > rect.width - 22 || y < 12 || y > rect.height - 44 ? null : (x - 68) / Math.max(1, rect.width - 90);
     }
 
     requestDraw() {
@@ -147,67 +147,57 @@ export class TimeSeriesChart {
             this.cursor.textContent = '';
             return;
         }
-        const left = 68, top = 42, pw = Math.max(1, w - 90), ph = Math.max(1, h - 86);
+        const left = 68, top = 12, pw = Math.max(1, w - 90), ph = Math.max(1, h - 56);
         const visible = data.series.map((series, index) => ({series, index, preference: seriesPreference(settings, series, index)})).filter(item => item.preference.visible);
-        const units = [];
+        // One shared percent axis: every curve is plotted as a percent of its
+        // own reference (or max|y|), multiplied by the legend scale.
+        let rangeMin = 0, rangeMax = 1;
         visible.forEach(item => {
-            if (!units.includes(item.series.unit)) units.push(item.series.unit);
+            const [min, max] = valueRange(item.series, this.divisors[item.index], item.preference.scale);
+            rangeMin = Math.min(rangeMin, min);
+            rangeMax = Math.max(rangeMax, max);
         });
-        if (!units.length) units.push('Нормоване значення');
-        const ranges = visible.length ? units.map(unit => {
-            const items = visible.filter(item => item.series.unit === unit);
-            let min = 0, max = 0;
-            items.forEach(item => {
-                const range = valueRange(item.series, this.divisors[item.index], item.preference.scale);
-                min = Math.min(min, range[0]);
-                max = Math.max(max, range[1]);
-            });
-            return [min, max];
-        }) : [[0,1]];
+        // Floating-point noise such as -1.42e-14% must not open the axis.
+        if (rangeMin < 0 && rangeMin > -1e-9) rangeMin = 0;
         c.font = '11px Segoe UI, sans-serif';
-        c.fillStyle = '#e5edf7'; c.textAlign = 'center';
-        c.font = '600 16px Segoe UI, sans-serif';
-        c.fillText(chartTitle(visible.map(item => item.series)), left + pw / 2, 24);
-        c.font = '11px Segoe UI, sans-serif';
-        const ticks = ph < 80 ? 2 : 5;
-        const yLabel = !visible.length ? 'Нормоване значення' : units.length === 1 ? `${visible[0].series.name.replace(/^[^ ]+ /, '')}, ${units[0]}` : `${units[0]} / ${units.slice(1).join(' / ')}`;
-        const primaryRange = ranges[0];
-        const secondaryRange = ranges[1];
-        for (let i = 0; i <= ticks; i++) {
-            const y = top + i * ph / ticks;
-            c.strokeStyle = i === ticks ? '#718096' : '#354458'; c.lineWidth = i === ticks ? 1.5 : 1;
+        // Y grid starts at 0; intermediate ticks sit on multiples of the step,
+        // the axis maximum gets a label only when it is far enough from the
+        // last multiple.
+        const yStep = percentTickStep(rangeMax - rangeMin);
+        const firstStep = Math.ceil(rangeMin / yStep - 1e-9);
+        const lastStep = Math.floor(rangeMax / yStep + 1e-9);
+        const yTicks = [];
+        for (let k = firstStep; k <= lastStep; k++) yTicks.push(k * yStep);
+        if (rangeMax - yTicks.at(-1) > yStep / 2) yTicks.push(rangeMax);
+        for (const value of yTicks) {
+            const y = top + ph * (1 - (value - rangeMin) / (rangeMax - rangeMin));
+            c.strokeStyle = '#354458'; c.lineWidth = 1;
             c.beginPath(); c.moveTo(left, y); c.lineTo(left + pw, y); c.stroke();
             c.fillStyle = '#b7c5d6'; c.textAlign = 'right';
-            const value = primaryRange[1] - (primaryRange[1] - primaryRange[0]) * i / ticks;
-            c.fillText(formatAxisValue(value), left - 10, y + 4);
-            if (secondaryRange) {
-                c.textAlign = 'left';
-                const secondaryValue = secondaryRange[1] - (secondaryRange[1] - secondaryRange[0]) * i / ticks;
-                c.fillText(formatAxisValue(secondaryValue), left + pw + 10, y + 4);
-            }
+            c.fillText(Number.isInteger(value) ? String(value) : formatAxisValue(value), left - 10, y + 4);
         }
         const times = data.time;
         const [min, max] = this.range;
         const xAt = i => left + (times[i] - min) / (max - min) * pw;
         const first = Math.max(0, nearestIndex(times, min) - 1), last = Math.min(times.length - 1, nearestIndex(times, max) + 1);
-        for (let i = 0; i <= 5; i++) {
-            const x = left + pw * i / 5;
-            c.strokeStyle = '#354458'; c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke();
+        // X grid: intermediate ticks at whole milliseconds, the final tick
+        // sits at the end of the range and may be fractional.
+        const minMs = min * millisecondsPerSecond, maxMs = max * millisecondsPerSecond;
+        const xStepMs = Math.max(1, Math.ceil((maxMs - minMs) / 5));
+        const xTicks = [];
+        for (let t = Math.ceil(minMs - 1e-9); t < maxMs - 1e-9; t += xStepMs) xTicks.push(t);
+        xTicks.push(maxMs);
+        for (const tickMs of xTicks) {
+            const x = left + (tickMs / millisecondsPerSecond - min) / (max - min) * pw;
+            c.strokeStyle = '#354458'; c.lineWidth = 1;
+            c.beginPath(); c.moveTo(x, top); c.lineTo(x, top + ph); c.stroke();
             c.fillStyle = '#b7c5d6'; c.textAlign = 'center';
-            const tickTime = min + (max - min) * i / 5;
-            c.fillText(formatAxisValue(tickTime * millisecondsPerSecond), x, top + ph + 21);
+            c.fillText(formatXAxisTick(tickMs), x, top + ph + 21);
         }
         c.fillStyle = '#dce5ef'; c.textAlign = 'center'; c.font = '600 12px Segoe UI, sans-serif';
         c.fillText('Час, мс', left + pw / 2, h - 7);
         c.save(); c.translate(13, top + ph / 2); c.rotate(-Math.PI / 2);
-        c.fillText(yLabel, 0, 0); c.restore();
-        if (units.length > 1) {
-            c.save(); c.translate(w - 7, top + ph / 2); c.rotate(-Math.PI / 2);
-            c.fillStyle = '#dce5ef'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'center';
-            c.fillText(units[1], 0, 0); c.restore();
-            c.fillStyle = '#dce5ef'; c.font = '600 11px Segoe UI, sans-serif'; c.textAlign = 'right';
-            c.fillText(units[0], left - 10, top - 10);
-        }
+        c.fillText('% від max', 0, 0); c.restore();
         c.strokeStyle = '#9aa9bb'; c.lineWidth = 1.5;
         c.strokeRect(left, top, pw, ph);
         c.save(); c.beginPath(); c.rect(left, top, pw, ph); c.clip();
@@ -215,12 +205,9 @@ export class TimeSeriesChart {
             const preference = seriesPreference(settings, s, j);
             if (!preference.visible) return;
             c.strokeStyle = colors[j]; c.lineWidth = 1.5; c.beginPath();
-            const axis = units.indexOf(s.unit);
-            const range = ranges[Math.max(0, axis)];
             for (let i = first; i <= last; i++) {
-                const value = s.values[i];
-                const scaled = value * preference.scale;
-                const y = top + ph * (1 - (scaled - range[0]) / (range[1] - range[0]));
+                const percent = s.values[i] * preference.scale / this.divisors[j] * 100;
+                const y = top + ph * (1 - (percent - rangeMin) / (rangeMax - rangeMin));
                 if (i === first) c.moveTo(xAt(i), y); else c.lineTo(xAt(i), y);
             } c.stroke();
         });
@@ -230,10 +217,9 @@ export class TimeSeriesChart {
         }
         c.restore();
         this.cursor.replaceChildren();
+        if (this.index === null) return;
         const intro = document.createElement('span');
-        intro.textContent = this.index === null
-            ? 'Кожна крива: y / опора · масштаб; опора — задана або max|y|. Значення курсора — вихідні.'
-            : `t = ${(times[this.index] * millisecondsPerSecond).toFixed(3)} мс`;
+        intro.textContent = `t = ${(times[this.index] * millisecondsPerSecond).toFixed(3)} мс`;
         this.cursor.append(intro);
         if (this.index !== null) data.series.forEach((s, j) => {
             const preference = seriesPreference(settings, s, j);

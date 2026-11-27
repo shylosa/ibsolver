@@ -924,9 +924,12 @@ $('workbook-calculate').addEventListener('click', () => operation(runWorkbookCal
 async function runWorkbookTransfer() {
     const run = visibleRun();
     const snapshot = run?.summary?.kind === 'WORKBOOK' ? run.snapshot.preparationWorkbook : null;
-    let current = null;
-    try { current = liveWorkbookValues(); } catch { current = null; }
-    const rows = current && workbookTransferMatches(snapshot, current)
+    // Entered values gate the transfer; the dialog's "current" column shows
+    // the working-screen fields being replaced, not the preparation inputs.
+    let entered = null;
+    try { entered = liveWorkbookValues(); } catch { entered = null; }
+    const current = state?.active?.parameters?.preparation ?? null;
+    const rows = entered && workbookTransferMatches(snapshot, entered)
         ? workbookTransferRows(run?.summary?.workbook?.transfer, current) : [];
     if (!rows.length) {
         status('Передачу скасовано: результат не відповідає поточним підготовчим даним.', true);
@@ -938,11 +941,11 @@ async function runWorkbookTransfer() {
         const field = document.createElement('th');
         field.scope = 'row';
         field.textContent = `${row.technicalId} - ${row.label}, ${row.unit}`;
-        const current = document.createElement('td');
+        const currentCell = document.createElement('td');
         const next = document.createElement('td');
-        current.textContent = row.currentText;
+        currentCell.textContent = row.currentText;
         next.textContent = row.newText;
-        tr.append(field, current, next);
+        tr.append(field, currentCell, next);
         return tr;
     }));
     const dialog = $('transfer-dialog');
