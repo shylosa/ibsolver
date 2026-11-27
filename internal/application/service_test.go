@@ -13,7 +13,7 @@ import (
 	"ibsolver/internal/storage/sqlite"
 )
 
-func TestLoadNeverGeneratesDemo(t *testing.T) {
+func TestLoadCreatesInitialConfiguration(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.db")
 	store, err := sqlite.Open(path)
 	if err != nil {
@@ -21,35 +21,14 @@ func TestLoadNeverGeneratesDemo(t *testing.T) {
 	}
 	service := New(store)
 	state, err := service.Load()
-	if err == nil {
-		c := state.Active
-		c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
-		state, err = service.SaveConfiguration(c, state.Settings)
-	}
-	if err != nil || state.Run != nil || len(state.Configurations) != 1 {
+	if err != nil || state.Run != nil || len(state.Configurations) != 1 || state.Active.Mode != domain.ModePreparation {
 		t.Fatalf("initial state=%+v err=%v", state, err)
 	}
-	if _, err = service.CreateDemo(state.Active.ID + 100); err == nil {
-		t.Fatal("accepted wrong configuration")
-	}
 	c := state.Active
-	c.Mode = domain.ModeDemo
+	c.Mode, c.Parameters = domain.ModeOscillator, domain.DefaultParameters()
 	state, err = service.SaveConfiguration(c, state.Settings)
 	if err != nil {
 		t.Fatal(err)
-	}
-	state, err = service.CreateDemo(state.Active.ID)
-	if err != nil || state.Run == nil {
-		t.Fatalf("demo: %v", err)
-	}
-	runID := state.Run.ID
-	changed := state.Active
-	d := *changed.Parameters.Demo
-	d.Frequency = 2
-	changed.Parameters.Demo = &d
-	state, err = service.SaveConfiguration(changed, state.Settings)
-	if err != nil || !state.Stale {
-		t.Fatalf("edit: %v", err)
 	}
 	store.Close()
 	store, err = sqlite.Open(path)
@@ -58,11 +37,8 @@ func TestLoadNeverGeneratesDemo(t *testing.T) {
 	}
 	defer store.Close()
 	state, err = New(store).Load()
-	if err != nil || state.Run == nil || state.Run.ID != runID || !state.Stale || *state.Active.Parameters.Demo != *changed.Parameters.Demo {
+	if err != nil || len(state.Configurations) != 1 || state.Active.Mode != domain.ModeOscillator || *state.Active.Parameters.Oscillator != *domain.DefaultParameters().Oscillator {
 		t.Fatalf("restart: %+v %v", state, err)
-	}
-	if state.Run.ResultVersion != domain.ResultVersion {
-		t.Fatal("wrong result version")
 	}
 }
 
@@ -211,50 +187,27 @@ func TestModeSwitchPreservesParametersAndRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := state.Active
-	// Invalid inactive demo parameters do not obstruct an oscillator run.
-	c.Parameters.Demo.Duration = -1
-	state, err = service.SaveConfiguration(c, state.Settings)
-	if err != nil {
-		t.Fatal(err)
-	}
 	state, err = service.Calculate(t.Context(), c.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	numerical := *state.Run
-	if _, err = service.CreateDemo(c.ID); err == nil {
-		t.Fatal("accepted demo action in oscillator mode")
-	}
+	// Switch to preparation: the oscillator run stays stored and becomes stale.
 	c = state.Active
-	c.Mode = domain.ModeDemo
-	if _, err = service.SaveConfiguration(c, state.Settings); err == nil {
-		t.Fatal("activated invalid demo")
+	c.Mode = domain.ModePreparation
+	if c.Parameters.Preparation == nil {
+		c.Parameters.Preparation = &domain.PreparationInputs{}
 	}
-	c.Parameters.Demo.Duration = 2
-	c.Parameters.Demo.Amplitude = 3
+	savedParameters := c.Parameters
 	state, err = service.SaveConfiguration(c, state.Settings)
 	if err != nil || !state.Stale || !reflect.DeepEqual(*state.Run, numerical) {
 		t.Fatal("mode switch lost run", err)
 	}
-	if _, err = service.Calculate(t.Context(), c.ID); err == nil {
-		t.Fatal("accepted numerical action in demo mode")
-	}
-	savedParameters := state.Active.Parameters
-	state, err = service.CreateDemo(c.ID)
-	if err != nil || state.Stale || state.Run.Mode != domain.ModeDemo {
-		t.Fatal("demo failed", err)
-	}
-	demo := *state.Run
+	// Switch back: both parameter blocks are preserved, the run is unchanged.
 	c = state.Active
 	c.Mode = domain.ModeOscillator
 	state, err = service.SaveConfiguration(c, state.Settings)
-	if err != nil || !state.Stale || !reflect.DeepEqual(state.Active.Parameters, savedParameters) || !reflect.DeepEqual(*state.Run, demo) {
+	if err != nil || state.Stale || !reflect.DeepEqual(state.Active.Parameters, savedParameters) || !reflect.DeepEqual(*state.Run, numerical) {
 		t.Fatal("switch lost parameters or run", err)
-	}
-	c = state.Active
-	c.Mode = domain.ModeDemo
-	state, err = service.SaveConfiguration(c, state.Settings)
-	if err != nil || state.Stale || !reflect.DeepEqual(*state.Run, demo) {
-		t.Fatal("switch back changed result", err)
 	}
 }

@@ -72,19 +72,7 @@ func TestPreparationPersistenceExchangeAndHistoricalRun(t *testing.T) {
 	if rows[1][1] != "10000000.0" || rows[1][2] != "1600.0" {
 		t.Fatalf("BAS CSV initial pressure/temperature: %q %q", rows[1][1], rows[1][2])
 	}
-	if _, err := service.CreateDemo(state.Active.ID); err == nil {
-		t.Fatal("generated demo for preparation")
-	}
 	c := state.Active
-	c.Mode = domain.ModeDemo
-	state, err = service.SaveConfiguration(c, state.Settings)
-	if err != nil {
-		t.Fatal(err)
-	}
-	state, err = service.CreateDemo(c.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
 	historical := state.Run
 	d, q, vd, lc, ns, f1 := .01234567890123456, 0.0, -5.0, 1e100, 5e-324, 1.2e-5
 	c.Mode = domain.ModePreparation

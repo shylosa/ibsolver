@@ -8,24 +8,13 @@ import (
 func TestConfigurationValidatesOnlyActiveMode(t *testing.T) {
 	p := DefaultParameters()
 	c := Configuration{Name: "Test", Mode: ModeOscillator, Parameters: p}
-	c.Parameters.Demo.Duration = -1
+	nan := math.NaN()
+	c.Parameters.Preparation = &PreparationInputs{Pmax: &nan}
 	if err := c.Validate(); err != nil {
-		t.Fatal(err)
+		t.Fatal("inactive preparation block must not obstruct oscillator validation", err)
 	}
-	c.Mode = ModeDemo
-	if err := c.Validate(); err == nil {
-		t.Fatal("accepted invalid active demo")
-	}
-	c.Parameters.Demo = nil
-	if err := c.Validate(); err == nil {
-		t.Fatal("accepted missing demo parameters")
-	}
-	c.Parameters = DefaultParameters()
+	c.Parameters.Preparation = nil
 	c.Parameters.Oscillator.Model.Mass = -1
-	if err := c.Validate(); err != nil {
-		t.Fatal(err)
-	}
-	c.Mode = ModeOscillator
 	if err := c.Validate(); err == nil {
 		t.Fatal("accepted invalid active oscillator")
 	}
@@ -42,14 +31,11 @@ func TestConfigurationValidatesOnlyActiveMode(t *testing.T) {
 	if err := c.Validate(); err == nil {
 		t.Fatal("accepted unknown mode")
 	}
-	for _, mode := range []Mode{ModeDemo, ModeOscillator} {
-		for _, value := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
-			c.Mode, c.Parameters = mode, DefaultParameters()
-			c.Parameters.Demo.Duration = value
-			c.Parameters.Oscillator.Model.Duration = value
-			if err := c.Validate(); err == nil {
-				t.Fatal("accepted non-finite active parameter")
-			}
+	for _, value := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+		c.Mode, c.Parameters = ModeOscillator, DefaultParameters()
+		c.Parameters.Oscillator.Model.Duration = value
+		if err := c.Validate(); err == nil {
+			t.Fatal("accepted non-finite active parameter")
 		}
 	}
 }

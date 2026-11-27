@@ -28,11 +28,6 @@ func validateExchange(c domain.Configuration) error {
 	if err := c.Validate(); err != nil {
 		return err
 	}
-	if c.Parameters.Demo != nil {
-		if err := c.Parameters.Demo.Validate(); err != nil {
-			return err
-		}
-	}
 	if c.Parameters.Oscillator != nil {
 		if err := c.Parameters.Oscillator.Validate(); err != nil {
 			return err
@@ -131,10 +126,10 @@ func completeConfigurationJSON(data []byte) error {
 				return err
 			}
 			continue
-		} else if mode == "demo" {
-			template, _ = json.Marshal(domain.DefaultInputs())
-		} else {
+		} else if mode == "oscillator" {
 			template, _ = json.Marshal(domain.DefaultNumerical())
+		} else {
+			return fmt.Errorf("Невідомий режим у файлі конфігурації: %s", mode)
 		}
 		if err := requireJSONFields(raw, template); err != nil {
 			return err

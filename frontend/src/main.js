@@ -1,5 +1,5 @@
 import './style.css';
-import {LoadState, SaveConfiguration, SaveSettings, CreateDemo, Calculate, CalculateWorkbook, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV} from '../wailsjs/go/main/App';
+import {LoadState, SaveConfiguration, SaveSettings, Calculate, CalculateWorkbook, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV, RenameConfiguration, DeleteConfiguration, DuplicateConfiguration} from '../wailsjs/go/main/App';
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import {preparationFields, workbookPreparationFields, preparationResultPanel, KT_CUSTOM_VALUE, parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation} from './preparation.mjs';
@@ -19,7 +19,6 @@ document.querySelector('#app').innerHTML = `
             </div>
             <div class="header-calculation-actions">
                 <button id="calculate" type="button" class="primary">Розрахувати</button>
-                <button id="demo" type="button" class="primary" hidden>Створити DEMO</button>
                 <button id="cancel" type="button" disabled>Скасувати</button>
             </div>
         </div>
@@ -30,8 +29,8 @@ document.querySelector('#app').innerHTML = `
     </div></header>
 <section class="parameters" aria-label="Параметри конфігурації">
     <div class="configuration-row"><label>Конфігурація<select id="configurations"></select></label>
-        <select id="mode" hidden aria-hidden="true" tabindex="-1"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option><option value="demo">DEMO · інтерфейс</option></select>
-        <label class="name-field">Назва<input id="name" maxlength="120" required></label><button id="new">Нова</button>
+        <select id="mode" hidden aria-hidden="true" tabindex="-1"><option value="preparation">Підготовчі дані</option><option value="oscillator">Осцилятор · RK45</option></select>
+        <button id="new" title="Створити порожню конфігурацію">Нова</button><button id="rename" title="Змінити назву активної конфігурації">Перейменувати</button><button id="duplicate" title="Створити копію активної конфігурації">Дублювати</button><button id="delete" title="Видалити активну конфігурацію разом з її результатами">Видалити…</button>
         <button id="import-json">Імпорт JSON</button><button id="export-json">Експорт JSON</button><span id="save-state" role="status"></span></div>
     <form id="inputs" novalidate>    <div id="preparation-fields">
         <div id="preparation-main" class="preparation-grid">
@@ -59,11 +58,6 @@ document.querySelector('#app').innerHTML = `
         <label>Ліміт спроб кроку<input id="s-maxSteps" type="number" min="1" max="1000000" step="1" required></label>
     </div><p class="hint">Допуски керують оцінкою локальної похибки, а не гарантують глобальну точність. Абсолютний допуск застосовується окремо до x та v у їхніх одиницях.</p></details>
     <p class="hint">m·x″ + c·x′ + k·x = 0. Математичний приклад у SI, не спеціалізований інженерний розрахунок.</p></div>
-    <div id="demo-fields" hidden><div class="demo-fields"><label>Тривалість, с<input id="duration" type="number" min="0.000001" max="10000" step="any" required></label>
-        <label>Кількість точок<input id="samples" type="number" min="2" max="20000" step="1" required></label>
-        <label>Амплітуда, ум. од.<input id="amplitude" type="number" min="0.000001" max="1000000" step="any" required></label>
-        <label>Частота, Гц<input id="frequency" type="number" min="0.000001" max="1000" step="any" required></label>
-        </div><p class="hint">DEMO: математичні криві для перевірки інтерфейсу, не фізичний розрахунок.</p></div>
     </form>
 </section>
 <section id="preparation-screen" class="preparation-screen" hidden aria-labelledby="preparation-screen-title">
@@ -95,10 +89,12 @@ document.querySelector('#app').innerHTML = `
     <label class="history">Зовнішні результати<select id="external-results" aria-label="Збережені зовнішні результати"></select></label><div class="history-actions"><button id="external-metadata">Метадані</button><button id="external-delete">Видалити…</button></div>
     <p id="result-state"></p><dl id="summary"></dl><h3 id="statistics-title" hidden>Інтегратор RK45</h3><dl id="statistics" hidden></dl></aside>
     <div id="splitter" role="separator" aria-label="Ширина результатів" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="480" tabindex="0"></div>
-    <section class="chart-workspace"><div class="chart-title"><span>Часові ряди</span><span id="chart-label">Збережених даних немає</span><button id="golden-ratio" class="golden-ratio-btn" title="Підігнати пропорцію поля з графіками до золотого перетину (1.618)">Золотий перетин 1.62</button><button id="chart-reset" title="Колесо — масштаб; перетягування — зсув; подвійний клік — увесь діапазон">Увесь графік</button><button id="import-csv">Імпорт CSV</button><button id="export-csv" disabled>CSV</button></div>
-        <div id="legend" aria-label="Видимі ряди"></div>
+    <section class="chart-workspace">
+        <div class="chart-toolbar"><div id="legend" aria-label="Видимі ряди"></div><div class="chart-actions"><button id="import-csv">Імпорт CSV</button><button id="export-csv" disabled>CSV</button></div></div>
         <div class="canvas-wrap"><canvas id="chart" aria-label="Спільне поле нормалізованих часових рядів"></canvas></div><div id="cursor" aria-live="off"></div></section></main>
 <dialog id="discard-dialog"><p>Не вдалося зберегти поточну чернетку. Поверніться до редагування або явно відкиньте незбережені зміни.</p><form method="dialog"><button value="return" autofocus>Повернутися до редагування</button><button value="discard">Відкинути незбережені зміни</button></form></dialog>
+<dialog id="rename-dialog"><form method="dialog"><h3>Перейменувати конфігурацію</h3><label>Назва<input id="rename-name" maxlength="120" required></label><div class="actions"><button id="rename-confirm" value="save" class="primary">Перейменувати</button><button value="cancel" formnovalidate autofocus>Скасувати</button></div></form></dialog>
+<dialog id="delete-dialog"><form method="dialog"><h3 id="delete-title">Видалити конфігурацію?</h3><div class="actions"><button id="delete-confirm" value="delete" class="danger">Видалити остаточно</button><button value="cancel" formnovalidate autofocus>Скасувати</button></div></form></dialog>
 <dialog id="external-dialog"><h3 id="external-dialog-title"></h3><p>Числові часові ряди з CSV. Фізичний зміст визначає джерело даних.</p><dl id="external-details"></dl><form method="dialog"><label>Назва<input id="external-name" maxlength="120" required></label><div class="actions"><button id="external-confirm" value="save">Зберегти результат</button><button value="cancel" formnovalidate autofocus>Закрити / скасувати</button></div></form></dialog>
 <dialog id="transfer-dialog"><h3>Передати результати на робочий екран</h3><p>Будуть змінені лише перелічені поля підготовчих даних. Інші параметри конфігурації та збережені результати розрахунків не змінюються; основний розрахунок не запускається.</p><table class="transfer-table"><thead><tr><th scope="col">Поле</th><th scope="col">Поточне значення</th><th scope="col">Нове значення</th></tr></thead><tbody id="transfer-rows"></tbody></table><form method="dialog"><button value="transfer" class="primary" autofocus>Передати на робочий екран</button><button value="cancel" formnovalidate>Скасувати</button></form></dialog>
 <footer><span id="status" role="status">Відкриття бази даних…</span><span>SQLite · локальне збереження</span></footer>`;
@@ -358,7 +354,6 @@ function setBusy(value) {
     $('splitter').setAttribute('aria-disabled', String(value));
     $('export-csv').disabled = value || !hasChart();
     $('external-metadata').disabled = $('external-delete').disabled = value || !externalChart;
-    $('chart-reset').disabled = value || !hasChart();
     if (state) updateMode();
     updateTransferAvailability();
 }
@@ -382,17 +377,9 @@ function width(value) {
     $('splitter').setAttribute('aria-valuenow', state.settings.resultsWidth);
 }
 function readConfiguration() {
-    const name = $('name').value.trim();
-    if (!name || [...name].length > 120) throw new Error('Вкажіть назву конфігурації (до 120 символів).');
     const parameters = structuredClone(state.active.parameters);
     const mode = state.active.mode;
-    if (mode === 'demo') {
-        parameters.demo = Object.fromEntries(['duration', 'samples', 'amplitude', 'frequency'].map(key => {
-            const field = $(key), value = field.valueAsNumber;
-            if (!validNumber(field, value)) throw new Error('Перевірте параметри DEMO.');
-            return [key, value];
-        }));
-    } else if (mode === 'preparation') {
+    if (mode === 'preparation') {
         if (!preparationScreen) {
             const values = {}, inputFormats = {}, errors = [];
             for (const {key} of preparationFields) {
@@ -427,7 +414,7 @@ function readConfiguration() {
         }
         parameters.preparationWorkbook = {...values, inputFormats};
     }
-    return {...state.active, name, parameters};
+    return {...state.active, parameters};
 }
 function updateMode() {
     if (!state) return;
@@ -435,12 +422,14 @@ function updateMode() {
     $('preparation-nav').textContent = preparationScreen ? 'Робочий екран' : 'Підготовчі дані';
     $('preparation-nav').disabled = busy;
     $('save').disabled = busy || !dirty;
-    $('calculate').hidden = preparationScreen || mode === 'demo';
+    $('rename').disabled = busy;
+    $('duplicate').disabled = busy;
+    $('delete').disabled = busy || state.configurations.length <= 1;
+    $('calculate').hidden = preparationScreen;
     $('calculate').disabled = busy;
-    $('demo').hidden = preparationScreen || mode !== 'demo';
     $('cancel').hidden = preparationScreen || !(numerical || preparation);
     $('toggle-parameters').hidden = preparationScreen;
-    for (const [id, active] of [['oscillator-fields', numerical], ['demo-fields', mode === 'demo'], ['preparation-fields', preparation]]) {
+    for (const [id, active] of [['oscillator-fields', numerical], ['preparation-fields', preparation]]) {
         const el = $(id);
         if (el) {
             el.hidden = !active;
@@ -618,10 +607,9 @@ function display(next) {
     state = next; dirty = false; externalChart = null; revision++;
     document.querySelectorAll('.parameters input, .parameters select, #preparation-screen input').forEach(field => { field.removeAttribute('aria-invalid'); field.title = ''; });
     $('configurations').replaceChildren(...state.configurations.map(c => new Option(c.name, c.id, false, c.id === state.active.id)));
-    $('name').value = state.active.name;
+    $('configurations').title = state.active.name;
     $('mode').value = state.active.mode;
     updateMode();
-    for (const [key, value] of Object.entries(state.active.parameters.demo || {})) $(key).value = value;
     for (const [group, prefix] of [['model', 'n-'], ['solver', 's-']]) {
         for (const [key, value] of Object.entries(state.active.parameters.oscillator?.[group] || {})) $(prefix + key).value = value;
     }
@@ -648,8 +636,7 @@ function display(next) {
     const numerical = run?.summary.kind === 'NUMERICAL';
     const ballistics = run?.summary.kind === 'BALLISTICS';
     const workbook = run?.summary.kind === 'WORKBOOK';
-    $('result-kind').textContent = state.active.mode === 'preparation' ? (workbook ? 'КНИГА' : ballistics ? 'БАЛІСТИКА' : 'ДАНІ') : numerical || !run ? 'RK45' : 'DEMO';
-    $('chart-label').textContent = run ? `${workbook ? 'Книга Диплом.xls' : ballistics ? 'Внутрішня балістика · OZVB' : numerical ? 'Чисельний приклад · RK45' : 'DEMO'} · запуск №${run.id}` : 'Збережених даних немає';
+    $('result-kind').textContent = state.active.mode === 'preparation' ? (workbook ? 'КНИГА' : ballistics ? 'БАЛІСТИКА' : 'ДАНІ') : 'RK45';
     $('summary').replaceChildren();
     $('statistics').replaceChildren();
     $('statistics').hidden = $('statistics-title').hidden = !numerical;
@@ -666,7 +653,7 @@ function display(next) {
         }
         const rows = [
             [run.summary.configurationName ? 'Назва запуску' : 'Поточна назва', run.summary.configurationName || state.active.name],
-            ['Режим запуску', run.mode === 'preparation' ? (workbook ? 'Підготовчі дані · книга' : 'Балістика (OZVB)') : run.mode === 'oscillator' ? 'Осцилятор' : 'DEMO'],
+            ['Режим запуску', run.mode === 'preparation' ? (workbook ? 'Підготовчі дані · книга' : 'Балістика (OZVB)') : 'Осцилятор'],
             ['Точок / серію', String(run.summary.samples ?? 0)],
             [durationTerm, durationVal],
             ['Серій', String(run.chart?.series?.length ?? 0)],
@@ -709,7 +696,7 @@ function display(next) {
         }
     }
     renderWorkbookResults(run);
-    chart.set(run?.chart || null, state.settings);
+    chart.set(run?.chart?.series?.length ? run.chart : null, state.settings);
     status(state.warning || 'Робочий стан відновлено з бази даних.');
 }
 function renderWorkbookPreparationFields() {
@@ -767,7 +754,7 @@ async function flushForTransition() {
 function markDirty(field) {
     dirty = true; revision++; $('save').disabled = busy;
     $('save-state').textContent = 'Є незбережені зміни';
-    if (!externalChart && visibleRun() && field.id !== 'name') {
+    if (!externalChart && visibleRun()) {
         let changed = true;
         try {
             const mode = state.active.mode;
@@ -792,8 +779,6 @@ function queueSave() {
         if (version !== revision || state.active.id !== configurationID) return;
         state = {...next, settings: state.settings}; dirty = false;
         $('save-state').textContent = 'Збережено'; $('save').disabled = true;
-        const option = [...$('configurations').options].find(item => Number(item.value) === state.active.id);
-        if (option) option.textContent = state.active.name;
         if (!externalChart) {
             $('result-state').textContent = resultState();
             $('result-state').classList.toggle('stale', state.stale);
@@ -823,9 +808,6 @@ for (const field of document.querySelectorAll('.parameters input, #preparation-s
         delayedSave.schedule();
     });
 }
-$('name').addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); $('inputs').requestSubmit(); }
-});
 for (const {key} of preparationFields) {
     $('p-' + key).addEventListener('blur', () => { try { readPreparationField(key); } catch {} });
     $('p-' + key).addEventListener('change', event => {
@@ -838,7 +820,6 @@ for (const {key} of preparationFields) {
 for (const {key} of workbookPreparationFields) {
     $(`workbook-${key}`).addEventListener('blur', () => { try { readWorkbookPreparationField(key); } catch {} });
 }
-$('chart-reset').addEventListener('click', () => chart.reset());
 $('import-json').addEventListener('click', () => operation(async () => {
     await flushForTransition();
     const next = await ImportConfiguration();
@@ -877,19 +858,49 @@ $('mode').addEventListener('change', event => {
         status('Режим змінено. Параметри режимів збережено.');
     }).finally(() => { $('mode').value = state.active.mode; });
 });
+function unusedConfigurationName(base) {
+    const names = new Set(state.configurations.map(c => c.name));
+    if (!names.has(base)) return base;
+    for (let i = 2; ; i++) {
+        const candidate = `${base} ${i}`;
+        if (!names.has(candidate)) return candidate;
+    }
+}
 $('new').addEventListener('click', () => operation(async () => {
     await flushForTransition();
     const parameters = {
-        ...state.active.parameters,
         preparation: Object.fromEntries(preparationFields.map(({key}) => [key, null])),
         preparationWorkbook: Object.fromEntries(workbookPreparationFields.map(({key}) => [key, null])),
     };
-    display(await SaveConfiguration({id: 0, name: `Конфігурація ${state.configurations.length + 1}`, mode: 'preparation', parameters}, state.settings));
-    $('name').focus(); $('name').select();
+    display(await SaveConfiguration({id: 0, name: unusedConfigurationName('Нова конфігурація'), mode: 'preparation', parameters}, state.settings));
+    status('Створено порожню конфігурацію.');
 }));
-$('demo').addEventListener('click', () => operation(async () => {
-    if (dirty) await save();
-    display(await CreateDemo(state.active.id)); status('DEMO створено та збережено. Це не фізичний розрахунок.');
+$('duplicate').addEventListener('click', () => operation(async () => {
+    await flushForTransition();
+    display(await DuplicateConfiguration(state.active.id));
+    status('Конфігурацію продубльовано; відкрито копію.');
+}));
+$('rename').addEventListener('click', () => operation(async () => {
+    await flushForTransition();
+    $('rename-name').value = state.active.name;
+    const dialog = $('rename-dialog');
+    const choice = new Promise(resolve => dialog.addEventListener('close', () => resolve(dialog.returnValue), {once: true}));
+    dialog.showModal();
+    if (await choice !== 'save') return;
+    const name = $('rename-name').value.trim();
+    if (!name || [...name].length > 120) throw new Error('Вкажіть назву конфігурації (до 120 символів).');
+    display(await RenameConfiguration(state.active.id, name));
+    status('Назву конфігурації змінено.');
+}));
+$('delete').addEventListener('click', () => operation(async () => {
+    await flushForTransition();
+    $('delete-title').textContent = `Видалити конфігурацію «${state.active.name}»?`;
+    const dialog = $('delete-dialog');
+    const choice = new Promise(resolve => dialog.addEventListener('close', () => resolve(dialog.returnValue), {once: true}));
+    dialog.showModal();
+    if (await choice !== 'delete') return;
+    display(await DeleteConfiguration(state.active.id));
+    status('Конфігурацію та всі її результати видалено.');
 }));
 async function runCalculate() {
     if (dirty) await save();
@@ -1024,21 +1035,6 @@ preparationTableTabs.addEventListener('keydown', event => {
 });
 selectPreparationTable(preparationTables[0].id);
 
-function applyGoldenRatio() {
-    const mainRect = document.querySelector('main').getBoundingClientRect();
-    const canvasWrap = document.querySelector('.canvas-wrap');
-    if (!canvasWrap) return;
-    const h = canvasWrap.clientHeight;
-    if (h <= 0) return;
-    const targetW = h * 1.618;
-    const idealSidebar = mainRect.width - targetW - 31;
-    const clampedSidebar = Math.round(Math.max(180, Math.min(480, idealSidebar)));
-    width(clampedSidebar);
-    persistSettings();
-    chart.requestDraw();
-    status(`Пропорції поля графіка оптимізовано до золотого перетину 1.62 (сайдбар: ${clampedSidebar}px).`);
-}
-$('golden-ratio').addEventListener('click', applyGoldenRatio);
 
 $('cancel').addEventListener('click', async () => {
     $('cancel').disabled = true;
@@ -1048,6 +1044,7 @@ $('cancel').addEventListener('click', async () => {
 $('reload').addEventListener('click', () => operation(async () => {
     await flushForTransition();
     display(await LoadState());
+    status(`Базу даних перезчитано о ${new Date().toLocaleTimeString('uk-UA')} · конфігурацій: ${state.configurations.length} · активна: «${state.active.name}»`);
 }));
 function persistSettings() {
     if (!state || busy) return;
@@ -1097,7 +1094,6 @@ function showExternal(result) {
     $('result-kind').textContent = 'ЗОВНІШНІ';
     $('result-state').textContent = 'Збережений зовнішній результат · не обчислено IBSolver';
     $('result-state').classList.remove('stale');
-    $('chart-label').textContent = `Зовнішній CSV · ${result.name}`;
     $('statistics').hidden = $('statistics-title').hidden = true;
     renderWorkbookResults(null);
     fillMetadata($('summary'), [['Назва', result.name], ...externalMetadata(result)]);

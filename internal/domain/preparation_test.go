@@ -52,7 +52,7 @@ func TestPreparationWorkbookInputsValidateFiniteNumbersAndFormats(t *testing.T) 
 	if p.Validate() == nil {
 		t.Fatal("accepted unknown input format")
 	}
-	if (Parameters{PreparationWorkbook: &p}).Validate(ModeDemo) == nil {
+	if (Parameters{PreparationWorkbook: &p}).Validate(ModeOscillator) == nil {
 		t.Fatal("accepted invalid stored workbook inputs in another mode")
 	}
 }

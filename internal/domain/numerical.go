@@ -60,9 +60,6 @@ func (r Run) Matches(c Configuration) bool {
 	if r.Mode != c.Mode {
 		return false
 	}
-	if r.Mode == ModeDemo {
-		return r.Snapshot.Demo != nil && c.Parameters.Demo != nil && *r.Snapshot.Demo == *c.Parameters.Demo
-	}
 	if r.Mode == ModeOscillator {
 		return r.Snapshot.Oscillator != nil && c.Parameters.Oscillator != nil && *r.Snapshot.Oscillator == *c.Parameters.Oscillator
 	}

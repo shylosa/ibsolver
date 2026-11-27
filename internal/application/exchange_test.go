@@ -54,7 +54,6 @@ func TestConfigurationExchangeAndFailedImportsPreserveState(t *testing.T) {
 		bytes.Replace(data, []byte(`"oscillator"`), []byte(`"unknown"`), 1),
 		bytes.Replace(data, []byte(`"mass": 1`), []byte(`"mass": 1e999`), 1),
 		bytes.Replace(data, []byte(`"mass": 1`), []byte(`"mass": NaN`), 1),
-		bytes.Replace(data, []byte(`"amplitude": 1`), []byte(`"amplitude": -1`), 1),
 		append(append([]byte{}, data...), []byte(` {}`)...),
 		[]byte(strings.Repeat(" ", MaxConfigurationBytes+1)), {0xff},
 	} {

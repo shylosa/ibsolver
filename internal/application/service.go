@@ -198,27 +198,36 @@ func (s *Service) SaveSettings(settings domain.Settings) (domain.State, error) {
 	return s.load()
 }
 
-func (s *Service) CreateDemo(configurationID int64) (domain.State, error) {
+// RenameConfiguration changes only the display name of an existing
+// configuration; the current parameter draft is irrelevant and untouched.
+func (s *Service) RenameConfiguration(id int64, name string) (domain.State, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	state, err := s.load()
-	if err != nil {
-		return state, err
-	}
-	if state.Active.Mode == domain.ModePreparation {
-		return state, fmt.Errorf("Розрахунковий модуль для підготовчих даних ще не реалізовано")
-	}
-	if state.Active.ID != configurationID || state.Active.Mode != domain.ModeDemo || state.Active.Parameters.Demo == nil {
-		return state, fmt.Errorf("Активна конфігурація змінилася")
-	}
-	run, err := chartdata.Demo(*state.Active.Parameters.Demo)
-	if err != nil {
-		return state, err
-	}
-	run.ConfigurationID = configurationID
-	run.Summary.ConfigurationName = state.Active.Name
-	if err = s.store.SaveRun(run); err != nil {
-		return state, err
+	if err := s.store.RenameConfiguration(id, name); err != nil {
+		return domain.State{}, err
 	}
 	return s.load()
 }
+
+// DeleteConfiguration removes the configuration with all of its runs and
+// external results; the state reload picks the new active configuration.
+func (s *Service) DeleteConfiguration(id int64) (domain.State, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.store.DeleteConfiguration(id); err != nil {
+		return domain.State{}, err
+	}
+	return s.load()
+}
+
+// DuplicateConfiguration copies the configuration under a unique name and
+// activates the copy.
+func (s *Service) DuplicateConfiguration(id int64) (domain.State, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, err := s.store.DuplicateConfiguration(id); err != nil {
+		return domain.State{}, err
+	}
+	return s.load()
+}
+

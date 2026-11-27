@@ -103,11 +103,25 @@ func (a *App) SaveSettings(settings domain.Settings) (domain.State, error) {
 	return a.service.SaveSettings(settings)
 }
 
-func (a *App) CreateDemo(configurationID int64) (domain.State, error) {
+func (a *App) RenameConfiguration(id int64, name string) (domain.State, error) {
 	if err := a.ready(); err != nil {
 		return domain.State{}, err
 	}
-	return a.service.CreateDemo(configurationID)
+	return a.service.RenameConfiguration(id, name)
+}
+
+func (a *App) DeleteConfiguration(id int64) (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.DeleteConfiguration(id)
+}
+
+func (a *App) DuplicateConfiguration(id int64) (domain.State, error) {
+	if err := a.ready(); err != nil {
+		return domain.State{}, err
+	}
+	return a.service.DuplicateConfiguration(id)
 }
 
 // beforeClose keeps the window alive until the frontend resolves its draft.

@@ -4,7 +4,7 @@ import "fmt"
 
 // SeriesID defines stable identities shared by producers and legacy decoding.
 func SeriesID(mode Mode, index int) string {
-	names := []string{"sine", "cosine", "decay", "wave", "pulse", "transition"}
+	names := []string{"series-1", "series-2", "series-3", "series-4", "series-5", "series-6"}
 	if mode == ModeOscillator {
 		names = []string{"position", "velocity", "acceleration", "kinetic-energy", "potential-energy", "total-energy"}
 	}

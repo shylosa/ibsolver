@@ -8,35 +8,12 @@ import (
 	"ibsolver/internal/prepcalc"
 )
 
-const ResultVersion = "demo-v1"
 const BallisticsVersion = "ballistics-v1"
-
-type Inputs struct {
-	Duration  float64 `json:"duration"`
-	Samples   int     `json:"samples"`
-	Amplitude float64 `json:"amplitude"`
-	Frequency float64 `json:"frequency"`
-}
-
-func DefaultInputs() Inputs { return Inputs{Duration: 10, Samples: 501, Amplitude: 1, Frequency: 0.5} }
-
-func (v Inputs) Validate() error {
-	for _, n := range []float64{v.Duration, v.Amplitude, v.Frequency} {
-		if math.IsNaN(n) || math.IsInf(n, 0) {
-			return fmt.Errorf("Параметри мають бути скінченними числами")
-		}
-	}
-	if v.Duration <= 0 || v.Duration > 10000 || v.Samples < 2 || v.Samples > 20000 || v.Amplitude <= 0 || v.Amplitude > 1e6 || v.Frequency <= 0 || v.Frequency > 1000 {
-		return fmt.Errorf("Параметри DEMO поза допустимими межами")
-	}
-	return nil
-}
 
 type Mode string
 
 const (
 	ModePreparation Mode = "preparation"
-	ModeDemo        Mode = "demo"
 	ModeOscillator  Mode = "oscillator"
 )
 
@@ -45,13 +22,12 @@ const (
 type Parameters struct {
 	Preparation         *PreparationInputs         `json:"preparation,omitempty"`
 	PreparationWorkbook *PreparationWorkbookInputs `json:"preparationWorkbook,omitempty"`
-	Demo                *Inputs                    `json:"demo,omitempty"`
 	Oscillator          *NumericalExample          `json:"oscillator,omitempty"`
 }
 
 func DefaultParameters() Parameters {
-	d, n := DefaultInputs(), DefaultNumerical()
-	return Parameters{Demo: &d, Oscillator: &n}
+	n := DefaultNumerical()
+	return Parameters{Oscillator: &n}
 }
 
 func (p Parameters) Validate(mode Mode) error {
@@ -64,10 +40,6 @@ func (p Parameters) Validate(mode Mode) error {
 	case ModePreparation:
 		if p.Preparation != nil {
 			return p.Preparation.Validate()
-		}
-	case ModeDemo:
-		if p.Demo != nil {
-			return p.Demo.Validate()
 		}
 	case ModeOscillator:
 		if p.Oscillator != nil {
@@ -87,11 +59,20 @@ type Configuration struct {
 	CreatedAt   string     `json:"createdAt"`
 	UpdatedAt   string     `json:"updatedAt"`
 	LatestRunID *int64     `json:"latestRunId,omitempty"`
+	RunsCount   int        `json:"runsCount,omitempty"`
+}
+
+// ValidateName is shared by create, rename and import paths.
+func ValidateName(name string) error {
+	if strings.TrimSpace(name) == "" || len([]rune(name)) > 120 {
+		return fmt.Errorf("Назва має містити від 1 до 120 символів")
+	}
+	return nil
 }
 
 func (c Configuration) Validate() error {
-	if strings.TrimSpace(c.Name) == "" || len([]rune(c.Name)) > 120 {
-		return fmt.Errorf("Назва має містити від 1 до 120 символів")
+	if err := ValidateName(c.Name); err != nil {
+		return err
 	}
 	if c.ID < 0 {
 		return fmt.Errorf("Невірний ідентифікатор конфігурації")
@@ -194,19 +175,7 @@ func (r Run) Validate() error {
 	if r.ResultVersion == WorkbookVersion && r.Mode == ModePreparation {
 		return r.validateWorkbook()
 	}
-	if r.ResultVersion != ResultVersion || r.Mode != ModeDemo || r.Summary.Kind != "DEMO" {
-		return fmt.Errorf("Несумісна версія результатів")
-	}
-	if err := r.Snapshot.Validate(r.Mode); err != nil {
-		return err
-	}
-	if err := r.Chart.Validate(); err != nil {
-		return err
-	}
-	if r.Summary.Samples != len(r.Chart.Time) || r.Summary.Samples != r.Snapshot.Demo.Samples || r.Summary.Duration != r.Snapshot.Demo.Duration {
-		return fmt.Errorf("Неповні результати")
-	}
-	return nil
+	return fmt.Errorf("Несумісна версія результатів")
 }
 
 func (r Run) validateBallistics() error {

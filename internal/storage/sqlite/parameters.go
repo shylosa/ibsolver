@@ -30,23 +30,20 @@ func decodeParameters(raw, numerical, resultVersion string) (parameterRecord, er
 		}
 		return record, record.Parameters.Validate(record.Mode)
 	}
-	var d *domain.Inputs
 	var n *domain.NumericalExample
-	if err := json.Unmarshal([]byte(raw), &d); err != nil {
-		return parameterRecord{}, err
-	}
 	if err := json.Unmarshal([]byte(numerical), &n); err != nil {
 		return parameterRecord{}, err
 	}
-	mode := domain.ModeDemo
-	// Configuration mode is inferred from valid numerical parameters, never a run.
-	// Snapshots supply resultVersion because their historical mode is known.
+	// Legacy rows without an envelope are oscillator configurations when the
+	// saved numerical block is valid; former demo rows are rejected (the demo
+	// mode no longer exists). Snapshots supply resultVersion because their
+	// historical mode is known.
 	if resultVersion == domain.NumericalVersion || (resultVersion == "" && n != nil && n.Validate() == nil) {
-		mode = domain.ModeOscillator
+		p := domain.Parameters{Oscillator: n}
+		if err := p.Validate(domain.ModeOscillator); err != nil {
+			return parameterRecord{}, err
+		}
+		return parameterRecord{Mode: domain.ModeOscillator, Parameters: p}, nil
 	}
-	p := domain.Parameters{Demo: d, Oscillator: n}
-	if err := p.Validate(mode); err != nil {
-		return parameterRecord{}, err
-	}
-	return parameterRecord{Mode: mode, Parameters: p}, nil
+	return parameterRecord{}, fmt.Errorf("Застарілі дані без чисельних параметрів не підтримуються")
 }

@@ -58,7 +58,7 @@ func (s *Store) migrate() error {
 	if err = tx.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 3 {
+	if version > 4 {
 		return fmt.Errorf("База даних створена новішою версією IBSolver")
 	}
 	if version == 0 {
@@ -97,6 +97,18 @@ CREATE INDEX external_results_configuration ON external_results(configuration_id
 CREATE TRIGGER external_results_immutable BEFORE UPDATE ON external_results
 BEGIN SELECT RAISE(ABORT, 'External results are immutable'); END;
 PRAGMA user_version=3;`); err != nil {
+			return err
+		}
+	}
+	if version < 4 {
+		// The demo mode is removed: drop its configurations, runs, series and
+		// external results. Legacy envelope-less rows without numerical data
+		// were demo configurations and go away as well.
+		if _, err = tx.Exec(`DELETE FROM run_series WHERE run_id IN (SELECT id FROM runs WHERE result_version='demo-v1' OR configuration_id IN (SELECT id FROM configurations WHERE json_extract(inputs_json,'$.mode')='demo'));
+DELETE FROM runs WHERE result_version='demo-v1' OR configuration_id IN (SELECT id FROM configurations WHERE json_extract(inputs_json,'$.mode')='demo');
+DELETE FROM external_results WHERE configuration_id IN (SELECT id FROM configurations WHERE json_extract(inputs_json,'$.mode')='demo');
+DELETE FROM configurations WHERE json_extract(inputs_json,'$.mode')='demo' OR (json_extract(inputs_json,'$.format') IS NULL AND json_extract(numerical_json,'$') IS NULL);
+PRAGMA user_version=4;`); err != nil {
 			return err
 		}
 	}
@@ -179,6 +191,144 @@ func (s *Store) SaveSettings(settings domain.Settings) error {
 	return tx.Commit()
 }
 
+// RenameConfiguration changes only the display name; parameters and runs stay untouched.
+func (s *Store) RenameConfiguration(id int64, name string) error {
+	if err := domain.ValidateName(name); err != nil {
+		return err
+	}
+	result, err := s.db.Exec(`UPDATE configurations SET name=?, updated_at=? WHERE id=?`, name, now(), id)
+	if err != nil {
+		return err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count != 1 {
+		return fmt.Errorf("Конфігурацію не знайдено")
+	}
+	return nil
+}
+
+// DeleteConfiguration removes a configuration together with its runs, series
+// and external results, then moves the active pointer to the oldest remaining
+// configuration. The last configuration cannot be deleted.
+func (s *Store) DeleteConfiguration(id int64) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var total int
+	if err = tx.QueryRow("SELECT count(*) FROM configurations").Scan(&total); err != nil {
+		return err
+	}
+	if total <= 1 {
+		return fmt.Errorf("Не можна видалити останню конфігурацію")
+	}
+	// Child tables reference configurations without ON DELETE CASCADE.
+	if _, err = tx.Exec("DELETE FROM run_series WHERE run_id IN (SELECT id FROM runs WHERE configuration_id=?)", id); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM runs WHERE configuration_id=?", id); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM external_results WHERE configuration_id=?", id); err != nil {
+		return err
+	}
+	result, err := tx.Exec("DELETE FROM configurations WHERE id=?", id)
+	if err != nil {
+		return err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count != 1 {
+		return fmt.Errorf("Конфігурацію не знайдено")
+	}
+	var nextID int64
+	if err = tx.QueryRow("SELECT min(id) FROM configurations").Scan(&nextID); err != nil {
+		return err
+	}
+	if err = setActiveConfiguration(tx, nextID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// DuplicateConfiguration copies all parameters under a fresh unique name and
+// makes the copy active.
+func (s *Store) DuplicateConfiguration(id int64) (int64, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var name, inputs, numerical string
+	err = tx.QueryRow("SELECT name, inputs_json, numerical_json FROM configurations WHERE id=?", id).Scan(&name, &inputs, &numerical)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("Конфігурацію не знайдено")
+	}
+	if err != nil {
+		return 0, err
+	}
+	copyName, err := uniqueConfigurationName(tx, name+" (копія)")
+	if err != nil {
+		return 0, err
+	}
+	stamp := now()
+	result, err := tx.Exec(`INSERT INTO configurations(name, inputs_json, numerical_json, created_at, updated_at) VALUES(?,?,?,?,?)`, copyName, inputs, numerical, stamp, stamp)
+	if err != nil {
+		return 0, err
+	}
+	newID, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	if err = setActiveConfiguration(tx, newID); err != nil {
+		return 0, err
+	}
+	return newID, tx.Commit()
+}
+
+// setActiveConfiguration rewrites the single settings row inside an open transaction.
+func setActiveConfiguration(tx *sql.Tx, id int64) error {
+	var settingsJSON string
+	if err := tx.QueryRow("SELECT settings_json FROM app_settings WHERE id=1").Scan(&settingsJSON); err != nil {
+		return err
+	}
+	var settings domain.Settings
+	if err := json.Unmarshal([]byte(settingsJSON), &settings); err != nil {
+		return err
+	}
+	settings.ActiveConfigurationID = id
+	if err := settings.Validate(); err != nil {
+		return err
+	}
+	return writeSettings(tx, settings)
+}
+
+// uniqueConfigurationName appends " 2", " 3", ... until the name is free and
+// keeps the result within the 120-rune limit.
+func uniqueConfigurationName(tx *sql.Tx, base string) (string, error) {
+	if runes := []rune(base); len(runes) > 110 {
+		base = string(runes[:110])
+	}
+	name := base
+	for i := 2; ; i++ {
+		var exists int
+		err := tx.QueryRow("SELECT 1 FROM configurations WHERE name=? LIMIT 1", name).Scan(&exists)
+		if errors.Is(err, sql.ErrNoRows) {
+			return name, nil
+		}
+		if err != nil {
+			return "", err
+		}
+		name = fmt.Sprintf("%s %d", base, i)
+	}
+}
+
 func (s *Store) SaveRun(run domain.Run) error {
 	if err := run.Validate(); err != nil {
 		return err
@@ -236,14 +386,14 @@ func (s *Store) Load() (domain.State, error) {
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return state, err
 	}
-	rows, err := s.db.Query("SELECT id, name, inputs_json, numerical_json, created_at, updated_at, (SELECT max(id) FROM runs WHERE configuration_id=configurations.id), coalesce((SELECT result_version FROM runs WHERE configuration_id=configurations.id ORDER BY id DESC LIMIT 1), '') FROM configurations ORDER BY id")
+	rows, err := s.db.Query("SELECT id, name, inputs_json, numerical_json, created_at, updated_at, (SELECT max(id) FROM runs WHERE configuration_id=configurations.id), coalesce((SELECT result_version FROM runs WHERE configuration_id=configurations.id ORDER BY id DESC LIMIT 1), ''), (SELECT count(*) FROM runs WHERE configuration_id=configurations.id) FROM configurations ORDER BY id")
 	if err != nil {
 		return state, err
 	}
 	for rows.Next() {
 		var c domain.Configuration
 		var inputs, numerical, version string
-		if err = rows.Scan(&c.ID, &c.Name, &inputs, &numerical, &c.CreatedAt, &c.UpdatedAt, &c.LatestRunID, &version); err != nil {
+		if err = rows.Scan(&c.ID, &c.Name, &inputs, &numerical, &c.CreatedAt, &c.UpdatedAt, &c.LatestRunID, &version, &c.RunsCount); err != nil {
 			rows.Close()
 			return state, err
 		}
@@ -253,12 +403,8 @@ func (s *Store) Load() (domain.State, error) {
 			state.Warning += " Пошкоджену або несумісну конфігурацію пропущено."
 			continue
 		}
-		defaults := domain.DefaultParameters()
-		if c.Parameters.Demo == nil {
-			c.Parameters.Demo = defaults.Demo
-		}
 		if c.Parameters.Oscillator == nil {
-			c.Parameters.Oscillator = defaults.Oscillator
+			c.Parameters.Oscillator = domain.DefaultParameters().Oscillator
 		}
 		state.Configurations = append(state.Configurations, c)
 	}

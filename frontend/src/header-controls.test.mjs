@@ -10,10 +10,10 @@ const workbookForm = main.match(/<form id="workbook-preparation-form"[\s\S]*?<\/
 
 test('one shared toolbar owns all primary commands', () => {
     assert.ok(toolbar);
-    for (const id of ['reload', 'save', 'calculate', 'demo', 'cancel', 'toggle-parameters', 'preparation-nav']) {
+    for (const id of ['reload', 'save', 'calculate', 'cancel', 'toggle-parameters', 'preparation-nav']) {
         assert.equal((toolbar.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1, id);
     }
-    for (const id of ['save', 'calculate', 'demo', 'cancel']) {
+    for (const id of ['save', 'calculate', 'cancel']) {
         assert.doesNotMatch(inputsForm, new RegExp(`id="${id}"`), id);
         assert.doesNotMatch(workbookForm, new RegExp(`id="${id}"`), id);
     }
@@ -50,20 +50,17 @@ test('mode remains internal and hidden while loaded configuration mode drives th
     assert.match(main, /\$\('configurations'\)\.addEventListener\('change'/);
     assert.match(main, /display\(await SaveSettings\(\{...state\.settings, activeConfigurationId: id\}\)\)/);
     assert.match(main, /\$\('mode'\)\.value = state\.active\.mode/);
-    assert.match(main, /mode === 'demo'/);
     assert.match(main, /mode === 'oscillator'/);
 });
 
 test('toolbar commands follow screen, mode, dirty, busy, and parameter-collapse state', () => {
     assert.match(main, /\$\('save'\)\.disabled = busy \|\| !dirty/);
-    assert.match(main, /\$\('calculate'\)\.hidden = preparationScreen \|\| mode === 'demo'/);
-    assert.match(main, /\$\('demo'\)\.hidden = preparationScreen \|\| mode !== 'demo'/);
+    assert.match(main, /\$\('calculate'\)\.hidden = preparationScreen;/);
     assert.match(main, /\$\('cancel'\)\.hidden = preparationScreen \|\| !\(numerical \|\| preparation\)/);
     assert.match(main, /\$\('toggle-parameters'\)\.hidden = preparationScreen/);
     for (const handler of [
         "$('save').addEventListener('click', () => operation(save))",
         "$('calculate').addEventListener('click', () => operation(runCalculate))",
-        "$('demo').addEventListener('click'",
         "$('cancel').addEventListener('click'",
         "$('toggle-parameters').addEventListener('click', () => toggleParameters())",
     ]) assert.ok(main.includes(handler), handler);
