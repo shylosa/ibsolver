@@ -39,6 +39,31 @@ export const formaOptions = preparationFields.find(field => field.key === 'forma
 export const ktOptions = preparationFields.find(field => field.key === 'kt').options;
 export const KT_CUSTOM_VALUE = 'custom';
 
+export const workbookPreparationFields = [
+    {key: 'd', label: 'd', unit: 'мм', help: 'Калібр (підпис C7; одиниця мм у E7).'},
+    {key: 'q', label: 'q', unit: 'кг', help: 'Маса снаряда (підпис C8; одиниця кг у E8).'},
+    {key: 'vd', label: 'Vд', unit: 'м/с', help: 'Дульна швидкість (підпис C9; одиниця м/с у E9).'},
+    {key: 'lc', label: 'lc', unit: 'м', help: 'Довжина ствола (підпис C10; одиниця м у E10). Поле D10 збережено як у книзі, але збережені формули Excel його не читають.'},
+    {key: 'ns', label: 'ns', unit: null, help: 'Коефіцієнт враховує вплив глибини нарізів. Одиницю вимірювання в книзі не вказано.'},
+    {key: 'f1', label: 'f1', unit: null, help: 'Коефіцієнт враховує тертя та роботу обертання. Одиницю вимірювання в книзі не вказано.'},
+    {key: 'af', label: 'af', unit: null, help: 'Використовується у визначенні f1; примітка до книги вказує на ручний вибір за Таблицею 2. Зв’язок таблиці з полем не автоматизовано. Одиницю вимірювання в книзі не вказано.'},
+];
+
+export function parseWorkbookPreparation(text) {
+    const raw = text.trim();
+    if (!raw) return null;
+    if (!/^[+-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)(?:[eE][+-]?\d+)?$/.test(raw)) {
+        const unfinished = /^[+-]?$/.test(raw) || /^[+-]?(?:\d+[.,]|(?:\d+(?:[.,]\d+)?|[.,]\d+)[eE][+-]?)$/.test(raw);
+        throw new Error(unfinished ? 'Завершіть число' : 'Введіть число без одиниць і розділювачів тисяч');
+    }
+    const value = Number(raw.replace(',', '.'));
+    const nonzero = /[1-9]/.test(raw.split(/[eE]/)[0]);
+    if (!Number.isFinite(value) || (nonzero && value === 0)) {
+        throw new Error('Число поза діапазоном binary64');
+    }
+    return value;
+}
+
 // Only complete decimal numbers are accepted; raw text stays in the editor.
 export function parsePreparation(text, key) {
     if (key === 'forma') {

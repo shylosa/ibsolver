@@ -59,7 +59,7 @@ func (s *Service) ExportConfiguration(id int64) ([]byte, error) {
 		return nil, err
 	}
 	version := 1
-	if c.Parameters.Preparation != nil {
+	if c.Parameters.Preparation != nil || c.Parameters.PreparationWorkbook != nil {
 		version = 2
 	}
 	return json.MarshalIndent(configurationFile{"ibsolver-configuration", version, c.Name, c.Mode, c.Parameters}, "", "  ")
@@ -81,7 +81,8 @@ func (s *Service) ImportConfiguration(data []byte) (domain.State, error) {
 	if err := decoder.Decode(new(any)); err != io.EOF {
 		return domain.State{}, fmt.Errorf("Очікується один JSON-об’єкт")
 	}
-	if f.Format != "ibsolver-configuration" || (f.Version != 1 && f.Version != 2) || (f.Version == 1 && f.Parameters.Preparation != nil) {
+	if f.Format != "ibsolver-configuration" || (f.Version != 1 && f.Version != 2) ||
+		(f.Version == 1 && (f.Parameters.Preparation != nil || f.Parameters.PreparationWorkbook != nil)) {
 		return domain.State{}, fmt.Errorf("Непідтримуваний формат або версія конфігурації")
 	}
 	// Require complete typed objects; JSON null must not silently become numeric zero.
@@ -121,23 +122,13 @@ func completeConfigurationJSON(data []byte) error {
 	for mode, raw := range parameters {
 		var template []byte
 		if mode == "preparation" {
-			var fields map[string]json.RawMessage
-			if err := json.Unmarshal(raw, &fields); err != nil {
+			if err := validateNullableNumbers(raw, []string{"d", "q", "vd", "lc", "ns", "f1", "af"}); err != nil {
 				return err
 			}
-			for _, key := range []string{
-				"d", "q", "vd", "lc", "ns", "f1", "af",
-			} {
-				if len(fields[key]) == 0 {
-					return fmt.Errorf("Відсутній параметр: %s", key)
-				}
-				text := strings.TrimSpace(string(fields[key]))
-				if text != "null" {
-					n, err := strconv.ParseFloat(text, 64)
-					if err != nil || decimalUnderflow(text, n) {
-						return fmt.Errorf("Число поза діапазоном binary64: %s", key)
-					}
-				}
+			continue
+		} else if mode == "preparationWorkbook" {
+			if err := validateNullableNumbers(raw, []string{"d", "q", "vd", "lc", "ns", "f1", "af"}); err != nil {
+				return err
 			}
 			continue
 		} else if mode == "demo" {
@@ -147,6 +138,26 @@ func completeConfigurationJSON(data []byte) error {
 		}
 		if err := requireJSONFields(raw, template); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func validateNullableNumbers(raw []byte, keys []string) error {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return err
+	}
+	for _, key := range keys {
+		if len(fields[key]) == 0 {
+			return fmt.Errorf("Відсутній параметр: %s", key)
+		}
+		text := strings.TrimSpace(string(fields[key]))
+		if text != "null" {
+			n, err := strconv.ParseFloat(text, 64)
+			if err != nil || decimalUnderflow(text, n) {
+				return fmt.Errorf("Число поза діапазоном binary64: %s", key)
+			}
 		}
 	}
 	return nil

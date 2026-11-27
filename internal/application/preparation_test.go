@@ -92,6 +92,13 @@ func TestPreparationPersistenceExchangeAndHistoricalRun(t *testing.T) {
 		D: &d, Q: &q, Vd: &vd, Lc: &lc, Ns: &ns, F1: &f1,
 		InputFormats: map[string]string{"q": "0.0", "w0": "17.1e-3"},
 	}
+	workbookD, workbookQ, workbookVd, workbookLc := 155.0, 42.5, 700.0, 5.2
+	workbookNs, workbookF1, workbookAf := 0.83, 4.1, -0.75
+	c.Parameters.PreparationWorkbook = &domain.PreparationWorkbookInputs{
+		D: &workbookD, Q: &workbookQ, Vd: &workbookVd, Lc: &workbookLc,
+		Ns: &workbookNs, F1: &workbookF1, Af: &workbookAf,
+		InputFormats: map[string]string{"d": "155,0", "af": "-0,75"},
+	}
 	state, err = service.SaveConfiguration(c, state.Settings)
 	if err != nil || !reflect.DeepEqual(state.Run, historical) {
 		t.Fatal("save changed historical run", err)

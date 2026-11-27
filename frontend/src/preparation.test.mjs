@@ -1,6 +1,27 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parsePreparation, parseKTSelection, ktSelectValue, displayPreparation, preparationFields, formaOptions, ktOptions, KT_CUSTOM_VALUE} from './preparation.mjs';
+import {parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation, preparationFields, workbookPreparationFields, formaOptions, ktOptions, KT_CUSTOM_VALUE} from './preparation.mjs';
+
+test('historical workbook editor exposes exactly seven inputs and confirmed units', () => {
+    assert.deepEqual(workbookPreparationFields.map(({key}) => key), ['d', 'q', 'vd', 'lc', 'ns', 'f1', 'af']);
+    assert.deepEqual(workbookPreparationFields.map(({unit}) => unit), ['мм', 'кг', 'м/с', 'м', null, null, null]);
+    assert.match(workbookPreparationFields.find(({key}) => key === 'lc').help, /D10.*формули Excel його не читають/);
+    for (const field of workbookPreparationFields) {
+        assert.ok(field.label);
+        assert.ok(field.help);
+    }
+});
+
+test('workbook editor parser accepts finite locale numbers without inferred units', () => {
+    assert.equal(parseWorkbookPreparation(''), null);
+    assert.equal(parseWorkbookPreparation('  '), null);
+    assert.equal(parseWorkbookPreparation('1,25e2'), 125);
+    assert.equal(parseWorkbookPreparation('-0.5'), -0.5);
+    assert.equal(parseWorkbookPreparation('0e-999'), 0);
+    for (const text of ['-', '1,', '1e-', '1 000', '1mm', 'NaN', 'Infinity', '1e999', '1e-999']) {
+        assert.throws(() => parseWorkbookPreparation(text), text);
+    }
+});
 
 test('nullable preparation inputs, comma, dot, exponent and SI conversion', () => {
     assert.equal(preparationFields.length, 22);

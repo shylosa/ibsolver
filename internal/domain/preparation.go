@@ -34,6 +34,38 @@ type PreparationInputs struct {
 	InputFormats map[string]string `json:"inputFormats,omitempty"`
 }
 
+// PreparationWorkbookInputs stores the seven manual inputs as entered, without
+// inferring units or physical limits.
+type PreparationWorkbookInputs struct {
+	D            *float64          `json:"d"`
+	Q            *float64          `json:"q"`
+	Vd           *float64          `json:"vd"`
+	Lc           *float64          `json:"lc"`
+	Ns           *float64          `json:"ns"`
+	F1           *float64          `json:"f1"`
+	Af           *float64          `json:"af"`
+	InputFormats map[string]string `json:"inputFormats,omitempty"`
+}
+
+func (p PreparationWorkbookInputs) Validate() error {
+	for _, n := range []*float64{p.D, p.Q, p.Vd, p.Lc, p.Ns, p.F1, p.Af} {
+		if n != nil && (math.IsNaN(*n) || math.IsInf(*n, 0)) {
+			return fmt.Errorf("Підготовчі дані з Excel мають бути скінченними числами")
+		}
+	}
+	for key, format := range p.InputFormats {
+		switch key {
+		case "d", "q", "vd", "lc", "ns", "f1", "af":
+		default:
+			return fmt.Errorf("Невідомий формат поля підготовчих даних з Excel: %s", key)
+		}
+		if len(format) > 128 {
+			return fmt.Errorf("Формат поля підготовчих даних з Excel задовгий: %s", key)
+		}
+	}
+	return nil
+}
+
 func (p PreparationInputs) Validate() error {
 	for _, n := range []*float64{
 		p.Pmax, p.Vd, p.D, p.Q, p.Ns, p.Hi, p.Pfor,
