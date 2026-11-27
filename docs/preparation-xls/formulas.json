@@ -1,0 +1,1880 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "fileName": "Диплом.xls",
+    "format": "BIFF8",
+    "sha256": "7445b2398d74206b2ce8ca3adf3c11ef1b16220c38790673506f5478bf0e2952",
+    "formulaDecoder": "xlrd 2.0.2",
+    "oleReader": "olefile 0.47",
+    "originalLexicalTextAvailable": false,
+    "originalLexicalTextNote": "BIFF8 stores formula tokens, not the original spacing or typed function-name casing. Expressions are rendered from those tokens."
+  },
+  "integrity": {
+    "formulaCount": 55,
+    "recoveredFormulaCount": 55,
+    "unrecoveredFormulaCount": 0,
+    "referenceIntegrity": true,
+    "definedNameCount": 30,
+    "unresolvedDefinedNameCount": 0,
+    "conditionalFormulaCount": 2,
+    "cycleCheck": {
+      "status": "no_cycles_found",
+      "cycles": [],
+      "scope": "decoded cell and defined-name dependencies",
+      "unresolvedHistoricalLabelRangesExcluded": 2
+    }
+  },
+  "formulas": [
+    {
+      "sheet": "Расчеты",
+      "cell": "F13",
+      "expression": "=q*Vд^2.0/2.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Vд",
+        "q"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "431c000000431d0000001e020007051e020006"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H13",
+      "expression": "=Eд/1000000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Eд"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43070000001f0000000080842e4106"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F15",
+      "expression": "=q/(d*0.001)^3.0",
+      "cellReferences": [],
+      "definedNames": [
+        "d",
+        "q"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "431c00000043040000001ffca9f1d24d62503f05151e03000706"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F17",
+      "expression": "=Eд/(d*0.001)^3.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Eд",
+        "d"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "19400001430700000043040000001ffca9f1d24d62503f05151e03000706"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H17",
+      "expression": "=Ce/1000000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Ce"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43020000001f0000000080842e4106"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F19",
+      "expression": "=H7",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "H7"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 1,
+          "decodedCellReferenceOccurrences": 1,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44060007c0"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F20",
+      "expression": "=ns*(d*0.001)^2.0",
+      "cellReferences": [],
+      "definedNames": [
+        "d",
+        "ns"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "431800000043040000001ffca9f1d24d62503f05151e02000705"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "G24",
+      "expression": "=H17",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "H17"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 1,
+          "decodedCellReferenceOccurrences": 1,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44100007c0"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F25",
+      "expression": "=($G$24-$L$25)*(K25-J25)/($M$25-$L$25)+J25",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$G$24"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$L$25"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "K25"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "J25"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$M$25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 7,
+          "decodedCellReferenceOccurrences": 7,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44170006004418000b0004154418000ac044180009c00415054418000c004418000b0004150644180009c003"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "I25",
+      "expression": "=MATCH(H17,'Таблица 1 (Слухоцкого)'!B7:B18)",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "H17"
+        },
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "B7:B18"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "B7:B18"
+        }
+      ],
+      "functions": [
+        "MATCH"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44100007c03b01000600110001c001c042024000"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "J25",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!C7:C18,I25)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "C7:C18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "C7:C18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110002c002c044180008c042021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "K25",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!C7:C18,I25+1.0)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "C7:C18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "C7:C18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110002c002c044180008c01e01000342021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "L25",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!B7:B18,I25)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "B7:B18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "B7:B18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110001c001c044180008c042021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "M25",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!B7:B18,I25+1.0)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "B7:B18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "B7:B18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110001c001c044180008c01e01000342021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F26",
+      "expression": "=($G$24-$L$25)*(K26-J26)/($M$25-$L$25)+J26",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$G$24"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$L$25"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "K26"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "J26"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$M$25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 7,
+          "decodedCellReferenceOccurrences": 7,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44170006004418000b0004154419000ac044190009c00415054418000c004418000b0004150644190009c003"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "J26",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!D7:D18,I25)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "D7:D18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "D7:D18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110003c003c044180008c042021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "K26",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!D7:D18,I25+1.0)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "D7:D18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "D7:D18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110003c003c044180008c01e01000342021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F27",
+      "expression": "=($G$24-$L$25)*(K27-J27)/($M$25-$L$25)+J27",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$G$24"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$L$25"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "K27"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "J27"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$M$25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 7,
+          "decodedCellReferenceOccurrences": 7,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44170006004418000b000415441a000ac0441a0009c00415054418000c004418000b00041506441a0009c003"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "J27",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!E7:E18,I25)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "E7:E18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "E7:E18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110004c004c044180008c042021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "K27",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!E7:E18,I25+1.0)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "E7:E18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "E7:E18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110004c004c044180008c01e01000342021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F28",
+      "expression": "=($G$24-$L$25)*(K28-J28)/($M$25-$L$25)+J28",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$G$24"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$L$25"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "K28"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "J28"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$M$25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 7,
+          "decodedCellReferenceOccurrences": 7,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44170006004418000b000415441b000ac0441b0009c00415054418000c004418000b00041506441b0009c003"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "J28",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!F7:F18,I25)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "F7:F18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "F7:F18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110005c005c044180008c042021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "K28",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!F7:F18,I25+1.0)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "F7:F18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "F7:F18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110005c005c044180008c01e01000342021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F29",
+      "expression": "=($G$24-$L$25)*(K29-J29)/($M$25-$L$25)+J29",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$G$24"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$L$25"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "K29"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "J29"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "$M$25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 7,
+          "decodedCellReferenceOccurrences": 7,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44170006004418000b000415441c000ac0441c0009c00415054418000c004418000b00041506441c0009c003"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "J29",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!G7:G18,I25)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "G7:G18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "G7:G18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110006c006c044180008c042021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "K29",
+      "expression": "=INDEX('Таблица 1 (Слухоцкого)'!G7:G18,I25+1.0)",
+      "cellReferences": [
+        {
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "G7:G18"
+        },
+        {
+          "sheet": "Расчеты",
+          "reference": "I25"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [
+        {
+          "kind": "inter_sheet",
+          "sheet": "Таблица 1 (Слухоцкого)",
+          "reference": "G7:G18"
+        }
+      ],
+      "functions": [
+        "INDEX"
+      ],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "3b01000600110006c006c044180008c01e01000342021d00"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F31",
+      "expression": "=Eд/Kисп*1000000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Eд",
+        "Kисп"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4307000000430b0000001f0000000080842e41051506"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H31",
+      "expression": "=Omega*1000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Omega"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43190000001ee80305"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F33",
+      "expression": "=Omega/Delta",
+      "cellReferences": [],
+      "definedNames": [
+        "Delta",
+        "Omega"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4319000000430500000006"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H33",
+      "expression": "=W0*1000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "W0"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "431e0000001ee80305"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "I34",
+      "expression": "=(15000.0-Cq)/15000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Cq"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "1e983a430300000004151e983a06"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F35",
+      "expression": "=W0/S",
+      "cellReferences": [],
+      "definedNames": [
+        "W0"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [
+        {
+          "token": "PtgElfRwV",
+          "labelCell": "E20",
+          "labelText": "S",
+          "quoted": false,
+          "relative": true,
+          "resolvedRange": null,
+          "note": "BIFF8 identifies the label cell but does not encode the resolved natural-language range in this token."
+        }
+      ],
+      "recovery": {
+        "status": "direct_biff8_with_legacy_label",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "431e00000018061300048006"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H35",
+      "expression": "=L0*1000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "L0"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "430c0000001ee80305"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F38",
+      "expression": "=Lсd*d/1000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Lсd",
+        "d"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43170000004304000000051ee80306"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H38",
+      "expression": "=Lс*1000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Lс"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43150000001ee80305"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "I39",
+      "expression": "=Lс-1.5*d*0.001",
+      "cellReferences": [],
+      "definedNames": [
+        "Lс",
+        "d"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43150000001f000000000000f83f4304000000051ffca9f1d24d62503f0504"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F40",
+      "expression": "=L0/Hi",
+      "cellReferences": [],
+      "definedNames": [
+        "Hi",
+        "L0"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "430c000000430a00000006"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H40",
+      "expression": "=Lкам*1000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Lкам"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43140000001ee80305"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F42",
+      "expression": "=LS-Lкам",
+      "cellReferences": [],
+      "definedNames": [
+        "LS",
+        "Lкам"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4310000000431400000004"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "H42",
+      "expression": "=Lд*1000.0",
+      "cellReferences": [],
+      "definedNames": [
+        "Lд"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43120000001ee80305"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F44",
+      "expression": "=Lд/L0",
+      "cellReferences": [],
+      "definedNames": [
+        "L0",
+        "Lд"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4312000000430c00000006"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F50",
+      "expression": "=IF(Cq>15000.0,$F$25*1.05,IF(Cq<13000.0,$F$25*0.95,$F$25))",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$F$25"
+        }
+      ],
+      "definedNames": [
+        "Cq"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [
+        "IF"
+      ],
+      "hasConditionalExpression": true,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 3,
+          "decodedCellReferenceOccurrences": 3,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43030000001e983a0d1902130044180005001fcdccccccccccf03f051908340043030000001ec832091902130044180005001f666666666666ee3f0519080c00241800050019080300220301001908030042030100"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F51",
+      "expression": "=Lsu",
+      "cellReferences": [],
+      "definedNames": [
+        "Lsu"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4311000000"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "I51",
+      "expression": "=IF(Cq>15000.0,LS*1.1,IF(Cq<13000.0,LS*0.9,$F$25))",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$F$25"
+        }
+      ],
+      "definedNames": [
+        "Cq",
+        "LS"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [
+        "IF"
+      ],
+      "hasConditionalExpression": true,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 1,
+          "decodedCellReferenceOccurrences": 1,
+          "rawDefinedNameTokenCount": 4,
+          "decodedDefinedNameOccurrences": 4,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43030000001e983a0d1902130043100000001f9a9999999999f13f051908340043030000001ec832091902130043100000001fcdccccccccccec3f0519080c00241800050019080300220301001908030042030100"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F52",
+      "expression": "=Lsu-Lкам",
+      "cellReferences": [],
+      "definedNames": [
+        "Lsu",
+        "Lкам"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4311000000431400000004"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "I52",
+      "expression": "=Lд.у/L0",
+      "cellReferences": [],
+      "definedNames": [
+        "L0",
+        "Lд.у"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 2,
+          "decodedDefinedNameOccurrences": 2,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4313000000430c00000006"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F55",
+      "expression": "=($I$52+1.0/Hi)/($I$52+1.0)",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "$I$52"
+        }
+      ],
+      "definedNames": [
+        "Hi"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 2,
+          "decodedCellReferenceOccurrences": 2,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44330008001e0100430a00000006031544330008001e0100031506"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F57",
+      "expression": "=H8",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "H8"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 1,
+          "decodedCellReferenceOccurrences": 1,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44070007c0"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F58",
+      "expression": "=H9",
+      "cellReferences": [
+        {
+          "sheet": "Расчеты",
+          "reference": "H9"
+        }
+      ],
+      "definedNames": [],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 1,
+          "decodedCellReferenceOccurrences": 1,
+          "rawDefinedNameTokenCount": 0,
+          "decodedDefinedNameOccurrences": 0,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "44080007c0"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F60",
+      "expression": "=afi+1.0/3.0*Lambda1*Omega/q",
+      "cellReferences": [],
+      "definedNames": [
+        "Lambda1",
+        "Omega",
+        "afi",
+        "q"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 4,
+          "decodedDefinedNameOccurrences": 4,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "43010000001e01001e030006430d00000005431900000005431c0000000603"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F63",
+      "expression": "=1.12*Fi*pm.кр/Fi_1*(1.0+1.0/2.0*Lambda1*Omega/q)",
+      "cellReferences": [],
+      "definedNames": [
+        "Fi",
+        "Fi_1",
+        "Lambda1",
+        "Omega",
+        "pm.кр",
+        "q"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 6,
+          "decodedDefinedNameOccurrences": 6,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "1fec51b81e85ebf13f430800000005431b0000000543090000001e01001e01001e020006430d00000005431900000005431c000000060315051506"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F67",
+      "expression": "=Fi*Eд/pm*1000000.0*S*Lд.у",
+      "cellReferences": [],
+      "definedNames": [
+        "Eд",
+        "Fi",
+        "Lд.у",
+        "pm"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [
+        {
+          "token": "PtgElfRwV",
+          "labelCell": "E20",
+          "labelText": "S",
+          "quoted": false,
+          "relative": true,
+          "resolvedRange": null,
+          "note": "BIFF8 identifies the label cell but does not encode the resolved natural-language range in this token."
+        }
+      ],
+      "recovery": {
+        "status": "direct_biff8_with_legacy_label",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 4,
+          "decodedDefinedNameOccurrences": 4,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4308000000430700000005431a0000001f0000000080842e4105180613000480054313000000051506"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F72",
+      "expression": "=W0",
+      "cellReferences": [],
+      "definedNames": [
+        "W0"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "431e000000"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F73",
+      "expression": "=pm",
+      "cellReferences": [],
+      "definedNames": [
+        "pm"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "431a000000"
+    },
+    {
+      "sheet": "Расчеты",
+      "cell": "F74",
+      "expression": "=Lс.у",
+      "cellReferences": [],
+      "definedNames": [
+        "Lс.у"
+      ],
+      "externalOrInterSheetReferences": [],
+      "functions": [],
+      "hasConditionalExpression": false,
+      "historicalOrAmbiguousReferences": [],
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high",
+        "method": "xlrd 2.0.2 BIFF8 token decompiler",
+        "referenceIntegrity": {
+          "rawCellReferenceTokenCount": 0,
+          "decodedCellReferenceOccurrences": 0,
+          "rawDefinedNameTokenCount": 1,
+          "decodedDefinedNameOccurrences": 1,
+          "definedNameTokensComplete": true,
+          "complete": true
+        }
+      },
+      "biff8TokenHex": "4316000000"
+    }
+  ]
+}

@@ -1,0 +1,434 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "fileName": "Диплом.xls",
+    "format": "BIFF8",
+    "sha256": "7445b2398d74206b2ce8ca3adf3c11ef1b16220c38790673506f5478bf0e2952",
+    "formulaDecoder": "xlrd 2.0.2",
+    "oleReader": "olefile 0.47",
+    "originalLexicalTextAvailable": false,
+    "originalLexicalTextNote": "BIFF8 stores formula tokens, not the original spacing or typed function-name casing. Expressions are rendered from those tokens."
+  },
+  "definedNames": [
+    {
+      "name": "afi",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$58",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000039000500"
+    },
+    {
+      "name": "Ce",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$17",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000010000500"
+    },
+    {
+      "name": "Cq",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$15",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00000e000500"
+    },
+    {
+      "name": "d",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$D$7",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000006000300"
+    },
+    {
+      "name": "Delta",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$26",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000019000500"
+    },
+    {
+      "name": "Ettaд",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$67",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000042000500"
+    },
+    {
+      "name": "Eд",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$13",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00000c000500"
+    },
+    {
+      "name": "Fi",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$60",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00003b000500"
+    },
+    {
+      "name": "Fi_1",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$57",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000038000500"
+    },
+    {
+      "name": "Hi",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$27",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00001a000500"
+    },
+    {
+      "name": "Kисп",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$28",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00001b000500"
+    },
+    {
+      "name": "L0",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$35",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000022000500"
+    },
+    {
+      "name": "Lambda1",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$55",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000036000500"
+    },
+    {
+      "name": "Lambdaд",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$44",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00002b000500"
+    },
+    {
+      "name": "lc",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$D$10",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000009000300"
+    },
+    {
+      "name": "LS",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$I$39",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000026000800"
+    },
+    {
+      "name": "Lsu",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$I$51",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000032000800"
+    },
+    {
+      "name": "Lд",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$42",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000029000500"
+    },
+    {
+      "name": "Lд.у",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$52",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000033000500"
+    },
+    {
+      "name": "Lкам",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$40",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000027000500"
+    },
+    {
+      "name": "Lс",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$38",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000025000500"
+    },
+    {
+      "name": "Lс.у",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$51",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000032000500"
+    },
+    {
+      "name": "Lсd",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$29",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00001c000500"
+    },
+    {
+      "name": "ns",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$19",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000012000500"
+    },
+    {
+      "name": "Omega",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$31",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00001e000500"
+    },
+    {
+      "name": "pm",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$63",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a00003e000500"
+    },
+    {
+      "name": "pm.кр",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$50",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000031000500"
+    },
+    {
+      "name": "q",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$D$8",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000007000300"
+    },
+    {
+      "name": "Vд",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$D$9",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000008000300"
+    },
+    {
+      "name": "W0",
+      "scope": {
+        "type": "workbook"
+      },
+      "refersTo": "=Расчеты!$F$33",
+      "builtIn": false,
+      "hidden": false,
+      "recovery": {
+        "status": "direct_biff8",
+        "confidence": "high"
+      },
+      "biff8TokenHex": "3a000020000500"
+    }
+  ]
+}
