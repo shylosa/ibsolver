@@ -16,6 +16,7 @@ build/bin/
 # Temporary files
 *.tmp
 *.log
+.scratchpad/
 
 # Environment secrets
 .env
