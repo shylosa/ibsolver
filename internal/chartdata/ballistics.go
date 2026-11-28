@@ -8,6 +8,8 @@ import (
 	"ibsolver/internal/domain"
 )
 
+func ptrFloat(v float64) *float64 { return &v }
+
 // Ballistics solves the historical interior ballistics initial-value problem
 // from OZVB-3A and the Slukhotsky model, yielding 6 time-series curves:
 // P (pressure), T (temperature), V (velocity), L (travel), PSI (relative burnt fraction),
@@ -196,7 +198,7 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 	}
 
 	var rawPoints []point
-	var pMax float64
+	var pMax, tMax, lMax float64
 	var lkg float64
 
 	rhs := func(currY [6]float64, moveFlag, kgFlag bool) ([6]float64, float64, float64) {
@@ -267,6 +269,8 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 		p := y[0]
 		if p > pMax {
 			pMax = p
+			tMax = t
+			lMax = y[5]
 		}
 		if !move && p > pfor {
 			move = true
@@ -430,15 +434,36 @@ func Ballistics(ctx context.Context, input domain.PreparationInputs) (domain.Run
 		etak = lkg / ld
 	}
 
+	// Extra metrics mirror the legacy DIPLOM.BAS result screen (Pd, TPmax,
+	// Delta, Lkan, Lm, Lad, Kisp, Kzar, dv). All are derived from values the
+	// integrator already computes.
+	ed := q * lastV * lastV / 2.0
+	kzar := 0.0
+	if pMax > 0 && ld > 0 && s > 0 {
+		kzar = ed * fi / pMax / ld / s
+	}
+	dv := 0.0
+	if vdz > 0 {
+		dv = (lastV - vdz) / vdz * 100.0
+	}
 	summary := &domain.BallisticsSummary{
-		MaxPressure:    pMax / 1e6,
-		MuzzleVelocity: lastV,
-		MuzzleTime:     lastT,
-		BarrelTravel:   lastL,
-		BurntFraction:  etak,
-		ChamberVolume:  w0,
-		ChargeMass:     omega,
-		BarrelMass:     qstv,
+		MaxPressure:       pMax / 1e6,
+		MuzzleVelocity:    lastV,
+		MuzzleTime:        lastT,
+		BarrelTravel:      lastL,
+		BurntFraction:     etak,
+		ChamberVolume:     w0,
+		ChargeMass:        omega,
+		BarrelMass:        qstv,
+		MuzzlePressure:    ptrFloat(pd / 1e6),
+		MaxPressureTime:   ptrFloat(tMax),
+		ChargeDensity:     ptrFloat(omega / w0),
+		ChamberLength:     ptrFloat(lkam),
+		PeakTravel:        ptrFloat(lMax),
+		ExpansionRatio:    ptrFloat(lad),
+		Kisp:              ptrFloat(ed / omega / 1e6),
+		Kzar:              ptrFloat(kzar),
+		VelocityDeviation: ptrFloat(dv),
 	}
 
 	run := domain.Run{

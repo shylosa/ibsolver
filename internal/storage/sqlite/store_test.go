@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -9,6 +10,36 @@ import (
 	"ibsolver/internal/chartdata"
 	"ibsolver/internal/domain"
 )
+
+func TestResolveDBPathPrefersDatabaseNextToExecutable(t *testing.T) {
+	dir := t.TempDir()
+	exe := filepath.Join(dir, "IBSolver.exe")
+	if err := os.WriteFile(exe, []byte("exe"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	portable := filepath.Join(dir, "ibsolver.db")
+	if err := os.WriteFile(portable, []byte("db"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	config := filepath.Join(dir, "appdata")
+	if got := resolveDBPath(exe, config); got != portable {
+		t.Fatalf("with db next to exe: got %q, want %q", got, portable)
+	}
+	if err := os.Remove(portable); err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(config, "IBSolver", "ibsolver.db")
+	if got := resolveDBPath(exe, config); got != want {
+		t.Fatalf("without db next to exe: got %q, want %q", got, want)
+	}
+	// A directory named ibsolver.db must not count as a portable database.
+	if err := os.Mkdir(portable, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveDBPath(exe, config); got != want {
+		t.Fatalf("db path is a directory: got %q, want %q", got, want)
+	}
+}
 
 func TestV1MigrationPreservesNumericalAndDropsNothing(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "v1.db")

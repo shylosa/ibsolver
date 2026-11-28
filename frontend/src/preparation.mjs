@@ -107,10 +107,15 @@ export function parseKTSelection(selection, customText) {
     return option.value;
 }
 
+// ".87" is accepted as input, but the editor always displays the leading zero.
+export function normalizeLeadingZero(text) {
+    return text.replace(/^([+-]?)\./, '$10.');
+}
+
 export function displayPreparation(value, key, inputFormat) {
     if (typeof inputFormat === 'string') {
         try {
-            if (parsePreparation(inputFormat, key) === value) return inputFormat;
+            if (parsePreparation(inputFormat, key) === value) return normalizeLeadingZero(inputFormat);
         } catch {}
     }
     if (value == null) return '';

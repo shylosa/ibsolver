@@ -1,7 +1,7 @@
 // Transfer plan for the workbook block F72:F74 («Для введення в програму»).
 // Pure data and logic without DOM access, so the confirmation dialog in
 // main.js and the tests share one implementation.
-import {displayPreparation} from './preparation.mjs';
+import {displayPreparation, parsePreparation} from './preparation.mjs';
 
 // Targets map kernel transfer values onto working-screen preparation fields.
 // The kernel returns W0 in m³, pm in MPa and LS in meters; the pmax editor
@@ -50,4 +50,31 @@ export function workbookTransferRows(transfer, current) {
         });
     }
     return rows;
+}
+
+// Values edited in the dialog's "new value" column are parsed with the same
+// rules as the working-screen fields, so display text round-trips into stored
+// units (MPa -> Pa for pmax, exponential text for w0, comma or dot decimals).
+export function parseTransferValue(text, key) {
+    const raw = typeof text === 'string' ? text.trim() : '';
+    if (!raw) throw new Error('Введіть число');
+    const stored = parsePreparation(raw, key);
+    if (stored == null || !Number.isFinite(stored)) throw new Error('Введіть скінченне число');
+    return stored;
+}
+
+// Validates every edited cell of the confirmation dialog. The thrown error
+// carries `index` of the offending row so the dialog can highlight it.
+export function parseTransferRows(rows, texts) {
+    if (!Array.isArray(rows) || !Array.isArray(texts) || texts.length !== rows.length) {
+        throw new Error('Невідповідна кількість значень для передачі');
+    }
+    return rows.map((row, index) => {
+        try {
+            return {key: row.key, stored: parseTransferValue(texts[index], row.key)};
+        } catch (error) {
+            error.index = index;
+            throw error;
+        }
+    });
 }

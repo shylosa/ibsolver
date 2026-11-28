@@ -70,3 +70,24 @@ test('manual database reload remains available alongside startup restoration', (
     assert.match(main, /\$\('reload'\)\.addEventListener\('click', \(\) => operation\(async \(\) => \{[\s\S]*?display\(await LoadState\(\)\)/);
     assert.match(main, /operation\(async \(\) => \{\s*display\(await LoadState\(\)\)/);
 });
+
+test('parameters panel stays visible on the preparation screen even when collapsed on the workspace', () => {
+    assert.match(style, /\.parameters\.collapsed \{ display: none !important; \}/);
+    assert.match(style, /\.preparation-screen-active \.parameters\.collapsed \{ display: block !important; \}/);
+    assert.match(main, /\$\('toggle-parameters'\)\.hidden = preparationScreen/);
+});
+
+test('field help buttons stay out of the Tab order so Tab moves between input fields', () => {
+    const occurrences = main.match(/helpButton\.tabIndex = -1/g) || [];
+    assert.equal(occurrences.length, 2, 'workspace fields and workbook fields');
+    assert.doesNotMatch(main, /helpButton\.tabIndex = 0/);
+});
+
+test('every workspace input carries a parameter-name badge inside the field', () => {
+    assert.match(main, /valueField\.className = unit \? 'field-with-unit' : 'field-input-wrap'/);
+    assert.match(main, /badge\.className = 'field-param-badge';\s*\n\s*badge\.textContent = technicalId;/);
+    assert.match(main, /valueField\.append\(badge\);\s*\n\s*controls\.append\(valueField\);/);
+    assert.match(style, /\.field-param-badge \{[^}]*position: absolute;[^}]*pointer-events: none;/);
+    assert.match(style, /\.field-with-unit \{[^}]*position: relative;/);
+    assert.match(style, /\.field-input-wrap \{[^}]*position: relative;/);
+});

@@ -164,3 +164,13 @@ test('preparation screen embeds tables without visible unknown-unit warnings', (
     assert.match(style, /#preparation-result-body \{[^}]*repeat\(6,\s*minmax\(0,\s*1fr\)\)/);
     assert.doesNotMatch(style, /\.preparation-screen \{[^}]*overflow:\s*hidden/);
 });
+
+test('workbook validation messages overlay below the card so fields and the row never shift', () => {
+    const style = readFileSync(new URL('./style.css', import.meta.url), 'utf8');
+    // Empty messages stay hidden; an error message is taken out of the flow and
+    // overlaid below the card, so the card height (and the whole row) never changes.
+    assert.match(style, /\.field-message:empty, \.field-message:not\(\.error\) \{ display: none; \}/);
+    assert.match(style, /\.workbook-preparation-field \{[^}]*position: relative;/);
+    assert.match(style, /#workbook-input-fields \.field-message \{[^}]*position: absolute;[^}]*top: 100%;/);
+    assert.doesNotMatch(style, /#workbook-input-fields \.field-message \{[^}]*min-height/);
+});

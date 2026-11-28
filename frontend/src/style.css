@@ -21,6 +21,8 @@ header { position: sticky; top: 0; z-index: 10; min-height: 48px; display: flex;
 
 .parameters { padding: 8px 18px 6px; background: #18212d; border-bottom: 1px solid #354254; flex-shrink: 0; transition: max-height .2s ease, opacity .2s ease; }
 .parameters.collapsed { display: none !important; }
+/* The parameters panel must stay visible on the preparation screen even when collapsed on the workspace. */
+.preparation-screen-active .parameters.collapsed { display: block !important; }
 .configuration-row, form { display: flex; align-items: end; gap: 10px; }
 .configuration-row { margin-bottom: 6px; flex-wrap: wrap; }
 #inputs { display: block; }
@@ -107,7 +109,12 @@ input[aria-invalid=true] { border-color: #e38474; }
 .field-help-button:focus-visible { color: #60c5fa; outline: none; }
 .preparation-controls { display: grid; gap: 4px; min-width: 0; }
 .preparation-controls input, .preparation-controls select { width: 100%; }
-.field-with-unit { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border: 1px solid #354254; border-radius: 4px; background: #202c3b; }
+.field-with-unit { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border: 1px solid #354254; border-radius: 4px; background: #202c3b; }
+.field-input-wrap { position: relative; display: grid; }
+.field-input-wrap input, .field-input-wrap select { padding-right: 40px; }
+.field-with-unit input { padding-right: 6px; }
+.field-with-unit .field-unit { padding-right: 34px; }
+.field-param-badge { position: absolute; top: 0; right: 3px; z-index: 1; padding: 0 4px; border-radius: 0 3px 0 3px; background: #2c3e53; color: #9db6cc; font-size: 8px; line-height: 1.5; font-weight: 600; letter-spacing: .3px; pointer-events: none; user-select: none; }
 .field-with-unit input { border: 0; background: transparent; }
 .field-with-unit:has(input:focus-visible) { outline: 2px solid #60c5fa; outline-offset: 2px; }
 .field-with-unit input:focus-visible { outline: none; }
@@ -155,6 +162,8 @@ main { grid-template-columns: minmax(180px, var(--results-width)) 7px minmax(0, 
 #transfer-dialog .transfer-table thead th { color: #e3edf8; background: #253447; font-weight: 700; }
 #transfer-dialog .transfer-table tbody th { font-weight: 600; color: #c2d1e1; }
 #transfer-dialog .transfer-table td { font-family: Consolas, monospace; }
+.transfer-value { display: grid; gap: 3px; min-width: 0; }
+.transfer-value input { width: 100%; font-variant-numeric: tabular-nums; }
 .preparation-transfer-actions { display: flex; justify-content: stretch; margin-top: 6px; padding-top: 6px; border-top: 1px solid #2e3e50; }
 .preparation-transfer-actions button { width: 100%; font-size: 11px; padding: 5px 7px; }
 
@@ -199,7 +208,9 @@ main { grid-template-columns: minmax(180px, var(--results-width)) 7px minmax(0, 
 .workbook-field-group .primary { height: 34px; }
 .workbook-field-group, .preparation-results { min-width: 0; padding: 7px; border: 1px solid #2e3e50; border-radius: 4px; background: #1a2431; }
 .workbook-input-fields { display: contents; }
-.workbook-preparation-field { display: grid; min-width: 0; gap: 3px; }
+.workbook-preparation-field { display: grid; min-width: 0; gap: 3px; position: relative; }
+/* The validation message overlays below the card instead of growing it, so the field never shifts and the row keeps its compact height. */
+#workbook-input-fields .field-message { position: absolute; top: 100%; left: 0; right: 0; z-index: 30; margin-top: 3px; padding: 3px 8px; border: 1px solid #7a3a34; border-radius: 4px; background: #241b1e; }
 .workbook-field-heading { display: flex; align-items: baseline; min-width: 0; color: #aab9cb; font-size: 12px; line-height: 1.4; }
 .workbook-field-label { display: inline; width: auto; min-width: 0; max-width: none; flex: 0 1 auto; color: inherit; overflow-wrap: anywhere; }
 .workbook-field-heading .field-help-button { flex: none; }

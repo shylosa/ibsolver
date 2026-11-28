@@ -2,12 +2,12 @@ import './style.css';
 import {LoadState, SaveConfiguration, SaveSettings, Calculate, CalculateWorkbook, CancelCalculation, ImportConfiguration, ExportConfiguration, ExportCSV, CloseWindow, PreviewExternalImport, CancelExternalImport, SaveExternalImport, OpenExternalResult, DeleteExternalResult, ExportExternalCSV, RenameConfiguration, DeleteConfiguration, DuplicateConfiguration} from '../wailsjs/go/main/App';
 import {TimeSeriesChart} from './chart';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {preparationFields, workbookPreparationFields, preparationResultPanel, KT_CUSTOM_VALUE, parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation} from './preparation.mjs';
+import {preparationFields, workbookPreparationFields, preparationResultPanel, KT_CUSTOM_VALUE, parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation, normalizeLeadingZero} from './preparation.mjs';
 import {preparationTables} from './preparation-tables.mjs';
 import {renderPreparationTable} from './preparation-table-view.mjs';
 import {externalMetadata} from './external.mjs';
 import {workbookResultSections} from './workbook-results.mjs';
-import {workbookTransferMatches, workbookTransferRows} from './workbook-transfer.mjs';
+import {workbookTransferMatches, workbookTransferRows, parseTransferRows} from './workbook-transfer.mjs';
 import {DebouncedTask} from './debounce.mjs';
 
 document.querySelector('#app').innerHTML = `
@@ -96,7 +96,7 @@ document.querySelector('#app').innerHTML = `
 <dialog id="rename-dialog"><form method="dialog"><h3>Перейменувати конфігурацію</h3><label>Назва<input id="rename-name" maxlength="120" required></label><div class="actions"><button id="rename-confirm" value="save" class="primary">Перейменувати</button><button value="cancel" formnovalidate autofocus>Скасувати</button></div></form></dialog>
 <dialog id="delete-dialog"><form method="dialog"><h3 id="delete-title">Видалити конфігурацію?</h3><div class="actions"><button id="delete-confirm" value="delete" class="danger">Видалити остаточно</button><button value="cancel" formnovalidate autofocus>Скасувати</button></div></form></dialog>
 <dialog id="external-dialog"><h3 id="external-dialog-title"></h3><p>Числові часові ряди з CSV. Фізичний зміст визначає джерело даних.</p><dl id="external-details"></dl><form method="dialog"><label>Назва<input id="external-name" maxlength="120" required></label><div class="actions"><button id="external-confirm" value="save">Зберегти результат</button><button value="cancel" formnovalidate autofocus>Закрити / скасувати</button></div></form></dialog>
-<dialog id="transfer-dialog"><h3>Передати результати на робочий екран</h3><p>Будуть змінені лише перелічені поля підготовчих даних. Інші параметри конфігурації та збережені результати розрахунків не змінюються; основний розрахунок не запускається.</p><table class="transfer-table"><thead><tr><th scope="col">Поле</th><th scope="col">Поточне значення</th><th scope="col">Нове значення</th></tr></thead><tbody id="transfer-rows"></tbody></table><form method="dialog"><button value="transfer" class="primary" autofocus>Передати на робочий екран</button><button value="cancel" formnovalidate>Скасувати</button></form></dialog>
+<dialog id="transfer-dialog"><h3>Передати результати на робочий екран</h3><p>Будуть змінені лише перелічені поля підготовчих даних. Інші параметри конфігурації та збережені результати розрахунків не змінюються; основний розрахунок не запускається. Значення в колонці «Нове значення» можна редагувати.</p><table class="transfer-table"><thead><tr><th scope="col">Поле</th><th scope="col">Поточне значення</th><th scope="col">Нове значення</th></tr></thead><tbody id="transfer-rows"></tbody></table><form method="dialog"><button value="transfer" class="primary" autofocus>Передати на робочий екран</button><button value="cancel" formnovalidate>Скасувати</button></form></dialog>
 <footer><span id="status" role="status">Відкриття бази даних…</span><span>SQLite · локальне збереження</span></footer>`;
 
 const $ = id => document.getElementById(id);
@@ -122,6 +122,7 @@ for (const field of preparationFields) {
     helpButton.id = `p-${key}-help-button`;
     helpButton.className = 'field-help-button';
     helpButton.type = 'button';
+    helpButton.tabIndex = -1; // Tab moves between input fields only; help stays mouse-accessible
     helpButton.textContent = 'ⓘ';
     helpButton.setAttribute('aria-label', `Довідка: ${label}`);
     helpButton.setAttribute('aria-expanded', 'false');
@@ -176,19 +177,22 @@ for (const field of preparationFields) {
     }
     const controls = document.createElement('div');
     controls.className = 'preparation-controls';
+    const valueField = document.createElement('div');
+    valueField.className = unit ? 'field-with-unit' : 'field-input-wrap';
+    valueField.append(control);
     if (field.control === 'text' && unit) {
-        const valueField = document.createElement('div');
-        valueField.className = 'field-with-unit';
         const suffix = document.createElement('span');
         suffix.className = 'field-unit';
         suffix.id = `p-${key}-unit`;
         suffix.textContent = unit;
         control.setAttribute('aria-describedby', `${suffix.id} p-${key}-message`);
-        valueField.append(control, suffix);
-        controls.append(valueField);
-    } else {
-        controls.append(control);
+        valueField.append(suffix);
     }
+    const badge = document.createElement('span');
+    badge.className = 'field-param-badge';
+    badge.textContent = technicalId;
+    valueField.append(badge);
+    controls.append(valueField);
     if (key === 'kt') {
         const customValue = document.createElement('input');
         customValue.id = 'p-kt-custom';
@@ -223,6 +227,7 @@ for (const field of workbookPreparationFields) {
     helpButton.id = `workbook-${field.key}-help-button`;
     helpButton.className = 'field-help-button';
     helpButton.type = 'button';
+    helpButton.tabIndex = -1; // Tab moves between input fields only; help stays mouse-accessible
     helpButton.textContent = 'ⓘ';
     helpButton.setAttribute('aria-label', `Довідка: ${field.label}`);
     helpButton.setAttribute('aria-expanded', 'false');
@@ -410,7 +415,7 @@ function readConfiguration() {
         const values = {}, inputFormats = {};
         for (const {key} of workbookPreparationFields) {
             values[key] = readWorkbookPreparationField(key);
-            inputFormats[key] = $(`workbook-${key}`).value;
+            inputFormats[key] = normalizeLeadingZero($(`workbook-${key}`).value);
         }
         parameters.preparationWorkbook = {...values, inputFormats};
     }
@@ -441,11 +446,11 @@ function preparationInputFormat(key, value) {
     const previous = state?.active.parameters.preparation?.inputFormats?.[key];
     if (typeof previous === 'string') {
         try {
-            if (parsePreparation(previous, key) === value) return previous;
+            if (parsePreparation(previous, key) === value) return normalizeLeadingZero(previous);
         } catch {}
     }
     if (key === 'kt' && $('p-kt').value !== KT_CUSTOM_VALUE) return $('p-kt').value;
-    return key === 'kt' ? $('p-kt-custom').value : $('p-' + key).value;
+    return normalizeLeadingZero(key === 'kt' ? $('p-kt-custom').value : $('p-' + key).value);
 }
 function readPreparationField(key) {
     const control = $('p-' + key);
@@ -667,9 +672,18 @@ function display(next) {
                 ['Час руху снаряда td, мс', b.muzzleTime != null ? (b.muzzleTime * 1000).toFixed(2) : '—'],
                 ['Шлях снаряда Ld, м', b.barrelTravel != null ? b.barrelTravel.toFixed(3) : '—'],
                 ['Маса заряду ω, кг', b.chargeMass != null ? b.chargeMass.toFixed(4) : '—'],
-                ['Обʼєм камори W₀, л', b.chamberVolume != null ? (b.chamberVolume * 1000).toFixed(3) : '—'],
+                ['Обʼєм камори W₀, см³', b.chamberVolume != null ? (b.chamberVolume * 1e6).toFixed(3) : '—'],
                 ['Положення кінця горіння ηk', b.burntFraction != null ? b.burntFraction.toFixed(3) : '—'],
                 ['Розрахункова маса ствола, кг', b.barrelMass != null ? b.barrelMass.toFixed(1) : '—'],
+                ['Тиск у дульному зрізі Pd, МПа', b.muzzlePressure != null ? b.muzzlePressure.toFixed(1) : '—'],
+                ['Час макс. тиску TPmax, мс', b.maxPressureTime != null ? (b.maxPressureTime * 1000).toFixed(2) : '—'],
+                ['Щільність заряджання Δ, кг/м³', b.chargeDensity != null ? b.chargeDensity.toFixed(1) : '—'],
+                ['Довжина камори Lkan, мм', b.chamberLength != null ? (b.chamberLength * 1000).toFixed(2) : '—'],
+                ['Шлях снаряда при Pm (Lm), мм', b.peakTravel != null ? (b.peakTravel * 1000).toFixed(2) : '—'],
+                ['Число обʼємів розширення Λд', b.expansionRatio != null ? b.expansionRatio.toFixed(2) : '—'],
+                ['Коеф. використання заряду Kisp, МДж/кг', b.kisp != null ? b.kisp.toFixed(3) : '—'],
+                ['Коеф. заряджання Kzar', b.kzar != null ? b.kzar.toFixed(3) : '—'],
+                ['Відхилення Vd від заданого dv, %', b.velocityDeviation != null ? b.velocityDeviation.toFixed(2) : '—'],
             );
         } else if (numerical) {
             const n = run.summary.numerical, snapshot = run.snapshot.oscillator;
@@ -708,7 +722,7 @@ function renderWorkbookPreparationFields() {
         let text = value == null ? '' : String(value);
         if (typeof format === 'string') {
             try {
-                if (parseWorkbookPreparation(format) === value) text = format;
+                if (parseWorkbookPreparation(format) === value) text = normalizeLeadingZero(format);
             } catch {}
         }
         field.value = text;
@@ -932,6 +946,9 @@ $('workbook-calculate').addEventListener('click', () => operation(runWorkbookCal
 // other parameter and stored run untouched, and never starts a calculation.
 // Wired from the button inside renderWorkbookResults; the button does not
 // exist at module scope.
+let pendingTransferRows = null;
+let pendingTransferValues = null;
+
 async function runWorkbookTransfer() {
     const run = visibleRun();
     const snapshot = run?.summary?.kind === 'WORKBOOK' ? run.snapshot.preparationWorkbook : null;
@@ -955,25 +972,81 @@ async function runWorkbookTransfer() {
         const currentCell = document.createElement('td');
         const next = document.createElement('td');
         currentCell.textContent = row.currentText;
-        next.textContent = row.newText;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `transfer-new-${row.key}`;
+        input.inputMode = 'decimal';
+        input.autocomplete = 'off';
+        input.value = row.newText;
+        input.setAttribute('aria-label', `Нове значення: ${row.technicalId} - ${row.label}, ${row.unit}`);
+        const error = document.createElement('span');
+        error.id = `transfer-new-${row.key}-error`;
+        error.className = 'field-message';
+        const wrap = document.createElement('div');
+        wrap.className = 'transfer-value';
+        wrap.append(input, error);
+        next.append(wrap);
         tr.append(field, currentCell, next);
         return tr;
     }));
+    pendingTransferRows = rows;
+    pendingTransferValues = null;
     const dialog = $('transfer-dialog');
     dialog.returnValue = 'cancel';
     const choice = new Promise(resolve => dialog.addEventListener('close', () => resolve(dialog.returnValue), {once: true}));
     dialog.showModal();
     if (await choice !== 'transfer') { status('Передачу скасовано. Значення не змінено.'); return; }
-    for (const row of rows) {
-        const field = $('p-' + row.key);
-        field.value = displayPreparation(row.newStored, row.key);
-        try { readPreparationField(row.key); } catch {}
+    const values = pendingTransferValues ?? rows.map(row => ({key: row.key, stored: row.newStored}));
+    pendingTransferRows = null;
+    pendingTransferValues = null;
+    for (const item of values) {
+        const field = $('p-' + item.key);
+        field.value = displayPreparation(item.stored, item.key);
+        try { readPreparationField(item.key); } catch {}
         markDirty(field);
     }
     setPreparationScreen(false);
     await save();
     status('Значення W0, pm, LS передано на робочий екран. Основний розрахунок не запущено.');
 }
+
+// The dialog stays open until every edited "new value" parses; only then is
+// it closed with returnValue "transfer" and the parsed values are applied.
+$('transfer-dialog').querySelector('form').addEventListener('submit', event => {
+    event.preventDefault();
+    const rows = pendingTransferRows ?? [];
+    const texts = rows.map(row => $(`transfer-new-${row.key}`)?.value ?? '');
+    let parsed;
+    try {
+        parsed = parseTransferRows(rows, texts);
+    } catch (error) {
+        const index = Number.isInteger(error.index) ? error.index : -1;
+        rows.forEach((row, i) => {
+            const input = $(`transfer-new-${row.key}`);
+            const message = $(`transfer-new-${row.key}-error`);
+            if (!input || !message) return;
+            if (i === index) {
+                input.setAttribute('aria-invalid', 'true');
+                message.textContent = error.message;
+                message.classList.add('error');
+            } else {
+                input.removeAttribute('aria-invalid');
+                message.textContent = '';
+                message.classList.remove('error');
+            }
+        });
+        status(error.message, true);
+        return;
+    }
+    rows.forEach(row => {
+        $(`transfer-new-${row.key}`)?.removeAttribute('aria-invalid');
+        const message = $(`transfer-new-${row.key}-error`);
+        if (message) { message.textContent = ''; message.classList.remove('error'); }
+    });
+    pendingTransferValues = parsed;
+    pendingTransferRows = null;
+    $('transfer-dialog').close('transfer');
+});
 
 function toggleParameters(force) {
     const section = document.querySelector('.parameters');

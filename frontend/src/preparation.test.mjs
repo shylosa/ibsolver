@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation, preparationFields, workbookPreparationFields, preparationResultPanel, formaOptions, ktOptions, KT_CUSTOM_VALUE} from './preparation.mjs';
+import {parsePreparation, parseWorkbookPreparation, parseKTSelection, ktSelectValue, displayPreparation, normalizeLeadingZero, preparationFields, workbookPreparationFields, preparationResultPanel, formaOptions, ktOptions, KT_CUSTOM_VALUE} from './preparation.mjs';
 
 test('historical workbook editor exposes exactly seven inputs and confirmed units', () => {
     assert.deepEqual(workbookPreparationFields.map(({key}) => key), ['d', 'q', 'vd', 'lc', 'ns', 'f1', 'af']);
@@ -71,6 +71,19 @@ test('preserves each valid field input format and falls back for mismatches', ()
         assert.equal(displayPreparation(stored, key, raw), raw, key);
     }
     assert.equal(displayPreparation(2, 'q', '3.0'), '2');
+});
+
+test('stored input format without a leading zero is displayed with one', () => {
+    assert.equal(normalizeLeadingZero('.87'), '0.87');
+    assert.equal(normalizeLeadingZero('-.5'), '-0.5');
+    assert.equal(normalizeLeadingZero('0.87'), '0.87');
+    assert.equal(normalizeLeadingZero('1.5'), '1.5');
+    assert.equal(normalizeLeadingZero('1e-3'), '1e-3');
+    // ".87" parses fine, but the editor must show "0.87" after a reload/calculate.
+    assert.equal(parsePreparation('.87', 'f1'), 870000);
+    assert.equal(displayPreparation(870000, 'f1', '.87'), '0.87');
+    assert.equal(displayPreparation(870000, 'f1', '0.87'), '0.87');
+    assert.equal(displayPreparation(0.5, 'q', '.5'), '0.5');
 });
 
 test('FORMA select names follow the BAS grain-shape descriptions', () => {

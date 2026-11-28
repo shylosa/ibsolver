@@ -100,6 +100,52 @@ func TestBallistics_ContextCancellation(t *testing.T) {
 	}
 }
 
+// TestBallistics_RPK74LegacyMetrics checks the extra summary metrics against
+// the historical DIPLOM.BAS RPK-74 screen (refs/DIPLOM.BAS lines 70-105):
+// Pd=116.1 MPa, TPmax=0.55 ms, Delta=839.8 kg/m^3, Lkan=42.35 mm, Lm=49.22 mm,
+// Lad=3.50, Kisp=0.866 MJ/kg, Kzar=0.606, dv=10.07 %. Tolerance covers the
+// different integrator (fixed-step RK4 there, fixed-step RK4 here with a
+// different step) and the rounded screen output.
+func TestBallistics_RPK74LegacyMetrics(t *testing.T) {
+	f := func(v float64) *float64 { return &v }
+	forma := 4
+	input := domain.PreparationInputs{
+		Pmax: f(440e6), Vd: f(960), D: f(5.45e-3), Q: f(3.4e-3), Ns: f(0.83),
+		Hi: f(2.5), Pfor: f(45e6), Af: f(1.1), Lc: f(0.413),
+		Kt: f(1.8e-3), Tn: f(15), Forma: &forma, Omega: f(2.192e-3), W0: f(2.61e-6),
+		Ro: f(1600), Tg15: f(2900), Ku1: f(0), F1: f(0.87e6), U15: f(1.11e-9),
+		Svod: f(0.37 / 2000), Pvos: f(5e6), Tvos: f(1600),
+	}
+	run, err := Ballistics(context.Background(), input)
+	if err != nil {
+		t.Fatalf("Ballistics failed: %v", err)
+	}
+	if err := run.Validate(); err != nil {
+		t.Fatalf("Run validation failed: %v", err)
+	}
+	s := run.Summary.Ballistics
+	const tol = 0.015
+	check := func(name string, got *float64, want float64) {
+		t.Helper()
+		if got == nil {
+			t.Errorf("%s: nil, want %.6g", name, want)
+			return
+		}
+		if d := math.Abs(*got-want) / math.Abs(want); d > tol {
+			t.Errorf("%s = %.6g, want %.6g (rel diff %.3f)", name, *got, want, d)
+		}
+	}
+	check("MuzzlePressure(Pd) MPa", s.MuzzlePressure, 116.1)
+	check("MaxPressureTime(TPmax) s", s.MaxPressureTime, 0.55e-3)
+	check("ChargeDensity(Delta)", s.ChargeDensity, 839.8)
+	check("ChamberLength(Lkan) m", s.ChamberLength, 42.35e-3)
+	check("PeakTravel(Lm) m", s.PeakTravel, 49.22e-3)
+	check("ExpansionRatio(Lad)", s.ExpansionRatio, 3.50)
+	check("Kisp MJ/kg", s.Kisp, 0.866)
+	check("Kzar", s.Kzar, 0.606)
+	check("VelocityDeviation(dv) %", s.VelocityDeviation, 10.07)
+}
+
 func TestBallistics_UsesPreparationOverrides(t *testing.T) {
 	omega := 10.0
 

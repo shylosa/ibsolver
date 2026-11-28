@@ -142,6 +142,17 @@ type BallisticsSummary struct {
 	ChamberVolume  float64 `json:"chamberVolume"`  // m^3
 	ChargeMass     float64 `json:"chargeMass"`     // kg
 	BarrelMass     float64 `json:"barrelMass"`     // kg
+	// Extra metrics mirror the legacy DIPLOM.BAS screen. Pointers keep runs
+	// saved before these fields existed valid (nil reads as absent).
+	MuzzlePressure   *float64 `json:"muzzlePressure,omitempty"`   // Pd, MPa
+	MaxPressureTime  *float64 `json:"maxPressureTime,omitempty"`  // TPmax, s
+	ChargeDensity    *float64 `json:"chargeDensity,omitempty"`    // Delta, kg/m^3
+	ChamberLength    *float64 `json:"chamberLength,omitempty"`    // Lkan, m
+	PeakTravel       *float64 `json:"peakTravel,omitempty"`       // Lm: projectile travel at Pm, m
+	ExpansionRatio   *float64 `json:"expansionRatio,omitempty"`   // Lad
+	Kisp             *float64 `json:"kisp,omitempty"`             // MJ/kg
+	Kzar             *float64 `json:"kzar,omitempty"`             // dimensionless
+	VelocityDeviation *float64 `json:"velocityDeviation,omitempty"` // dv, %
 }
 
 type Summary struct {
@@ -194,6 +205,11 @@ func (r Run) validateBallistics() error {
 	}
 	for _, v := range []float64{s.MaxPressure, s.MuzzleVelocity, s.MuzzleTime, s.BarrelTravel, s.BurntFraction, s.ChamberVolume, s.ChargeMass, s.BarrelMass} {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return fmt.Errorf("Некоректні балістичні підсумки")
+		}
+	}
+	for _, v := range []*float64{s.MuzzlePressure, s.MaxPressureTime, s.ChargeDensity, s.ChamberLength, s.PeakTravel, s.ExpansionRatio, s.Kisp, s.Kzar, s.VelocityDeviation} {
+		if v != nil && (math.IsNaN(*v) || math.IsInf(*v, 0)) {
 			return fmt.Errorf("Некоректні балістичні підсумки")
 		}
 	}

@@ -18,12 +18,26 @@ import (
 
 type Store struct{ db *sql.DB }
 
+// resolveDBPath prefers a portable database placed next to the executable;
+// otherwise it falls back to %APPDATA%\IBSolver\ibsolver.db.
+func resolveDBPath(executable, userConfigDir string) string {
+	candidate := filepath.Join(filepath.Dir(executable), "ibsolver.db")
+	if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+		return candidate
+	}
+	return filepath.Join(userConfigDir, "IBSolver", "ibsolver.db")
+}
+
 func DefaultPath() (string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
 	root, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(root, "IBSolver", "ibsolver.db"), nil
+	return resolveDBPath(exe, root), nil
 }
 
 func Open(path string) (*Store, error) {

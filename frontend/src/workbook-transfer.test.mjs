@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {workbookTransferMatches, workbookTransferRows, workbookTransferTargets} from './workbook-transfer.mjs';
+import {workbookTransferMatches, workbookTransferRows, workbookTransferTargets, parseTransferRows, parseTransferValue} from './workbook-transfer.mjs';
 import {parsePreparation} from './preparation.mjs';
 
 // Numeric values mirror the Go golden test (internal/prepcalc) for the
@@ -65,6 +65,42 @@ test('rows are refused when a transfer value is missing or not finite', () => {
     assert.deepEqual(workbookTransferRows({w0: 1e-06}, current), []);
 });
 
+test('edited dialog values parse back into stored units like the editor fields', () => {
+    const rows = workbookTransferRows(transfer, current);
+    // Untouched display text round-trips to the original stored values.
+    assert.deepEqual(
+        parseTransferRows(rows, rows.map(row => row.newText)),
+        rows.map(row => ({key: row.key, stored: row.newStored})),
+    );
+    // Edited values: comma decimals, plain MPa for pmax (stored as pascals).
+    assert.deepEqual(parseTransferRows(rows, ['2e-6', '450', '0,42']), [
+        {key: 'w0', stored: 2e-06},
+        {key: 'pmax', stored: 450e6},
+        {key: 'lc', stored: 0.42},
+    ]);
+    assert.equal(parseTransferValue(' 1,05 ', 'f1'), 1.05e6);
+    assert.equal(parseTransferValue('5,45', 'd'), 0.00545);
+});
+
+test('invalid edited values throw with the row index for highlighting', () => {
+    const rows = workbookTransferRows(transfer, current);
+    assert.throws(() => parseTransferRows(rows, ['abc', '450', '0.42']), error => {
+        assert.equal(error.index, 0);
+        assert.match(error.message, /Введіть число/);
+        return true;
+    });
+    assert.throws(() => parseTransferRows(rows, ['2e-6', '', '0.42']), error => {
+        assert.equal(error.index, 1);
+        assert.match(error.message, /Введіть число/);
+        return true;
+    });
+    assert.throws(() => parseTransferRows(rows, ['2e-6', '450']), /Невідповідна кількість/);
+    assert.throws(() => parseTransferRows(rows, ['2e-6', '450', '1e999']), error => {
+        assert.equal(error.index, 2);
+        return true;
+    });
+});
+
 test('main.js wires the transfer button, dialog and safety rules', () => {
     const main = readFileSync(new URL('./main.js', import.meta.url), 'utf8');
     const results = main.match(/<aside id="preparation-results"[\s\S]*?<\/aside>/)?.[0] ?? '';
@@ -87,11 +123,27 @@ test('main.js wires the transfer button, dialog and safety rules', () => {
     assert.match(handler, /workbookTransferMatches\(snapshot, entered\)/);
     assert.match(handler, /const current = state\?\.active\?\.parameters\?\.preparation \?\? null/);
     assert.match(handler, /workbookTransferRows\(run\?\.summary\?\.workbook\?\.transfer, current\)/);
-    assert.match(handler, /\$\(\'p-\' \+ row\.key\)/);
+    // The "new value" column is an editable input prefilled with display text.
+    assert.match(handler, /input\.id = `transfer-new-\$\{row\.key\}`/);
+    assert.match(handler, /input\.value = row\.newText/);
+    assert.match(handler, /error\.id = `transfer-new-\$\{row\.key\}-error`/);
+    assert.match(handler, /\$\('p-' \+ item\.key\)/);
+    assert.match(handler, /displayPreparation\(item\.stored, item\.key\)/);
     assert.match(handler, /setPreparationScreen\(false\)/);
     assert.match(handler, /await save\(\)/);
     assert.match(handler, /Основний розрахунок не запущено/);
     assert.doesNotMatch(handler, /Calculate\(|CalculateWorkbook\(|runCalculate/);
+    // Edited values come from the validated dialog inputs, not the raw rows.
+    assert.match(handler, /pendingTransferValues \?\? rows\.map\(row => \(\{key: row\.key, stored: row\.newStored\}\)\)/);
+
+    // The dialog form validates on submit and only closes on success.
+    assert.match(main, /\$\('transfer-dialog'\)\.querySelector\('form'\)\.addEventListener\('submit', event => \{/);
+    assert.match(main, /event\.preventDefault\(\)/);
+    assert.match(main, /parseTransferRows\(rows, texts\)/);
+    assert.match(main, /\$\('transfer-dialog'\)\.close\('transfer'\)/);
+    assert.match(main, /input\.setAttribute\('aria-invalid', 'true'\)/);
+    assert.match(main, /<dialog id="transfer-dialog">/);
+    assert.match(main, /Значення в колонці «Нове значення» можна редагувати\./);
     // Cancellation leaves everything untouched.
     assert.match(handler, /Передачу скасовано\. Значення не змінено\./);
     // Availability follows the live seven inputs and the shown run snapshot.
