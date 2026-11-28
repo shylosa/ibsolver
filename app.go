@@ -74,7 +74,7 @@ func (a *App) CancelCalculation() {
 func (a *App) ready() error {
 	<-a.initDone
 	if a.startupErr != nil {
-		return fmt.Errorf("Не вдалося відкрити базу даних: %w", a.startupErr)
+		return fmt.Errorf("Не вдалося відкрити базу даних IBSolver: %w", a.startupErr)
 	}
 	if a.service == nil {
 		return fmt.Errorf("Застосунок ще не готовий")

@@ -18,35 +18,37 @@ import (
 
 type Store struct{ db *sql.DB }
 
-// resolveDBPath prefers a portable database placed next to the executable;
-// otherwise it falls back to %APPDATA%\IBSolver\ibsolver.db.
-func resolveDBPath(executable, userConfigDir string) string {
-	candidate := filepath.Join(filepath.Dir(executable), "ibsolver.db")
-	if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-		return candidate
-	}
-	return filepath.Join(userConfigDir, "IBSolver", "ibsolver.db")
+// DBPathNextTo returns the only database location IBSolver uses: ibsolver.db
+// in the directory of the given executable. It never depends on the process
+// working directory, the user profile, or any environment variable.
+func DBPathNextTo(executable string) string {
+	return filepath.Join(filepath.Dir(executable), "ibsolver.db")
 }
 
+// DefaultPath resolves the portable database path from the actual executable
+// file, so double-click, shortcut, and command-line launches all agree.
 func DefaultPath() (string, error) {
 	exe, err := os.Executable()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("не вдалося визначити каталог програми: %w", err)
 	}
-	root, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return resolveDBPath(exe, root), nil
+	return DBPathNextTo(exe), nil
 }
 
+// Open opens (creating if absent) the database at path. The directory is never
+// created: a missing or read-only application directory is an explicit error,
+// and there is no fallback location.
 func Open(path string) (*Store, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return nil, err
+	probe, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return nil, fmt.Errorf("%s недоступний для запису; перевірте права запису до каталогу програми: %w", path, err)
+	}
+	if err = probe.Close(); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 	db.SetMaxOpenConns(1)
 	s := &Store{db: db}
@@ -55,7 +57,7 @@ func Open(path string) (*Store, error) {
 	}
 	if err != nil {
 		db.Close()
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 	return s, nil
 }

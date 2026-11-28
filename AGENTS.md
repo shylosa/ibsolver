@@ -109,7 +109,10 @@ ibsolver/
 - **Schema version**: `PRAGMA user_version` (зараз 3). Нова таблиця/колонка → новий `version < N` блок у `migrate()` та інкремент версії.
 - **Дані серій**: gzip JSON BLOB у `run_series`. Ліміт читання — 20 MiB.
 - **Незмінні зовнішні результати**: тригер `external_results_immutable` в схемі.
-- **DB path**: `%APPDATA%\IBSolver\ibsolver.db` (`os.UserConfigDir()`).
+- **DB path**: виключно portable — `ibsolver.db` у каталозі виконуваного файлу
+  (`os.Executable()` + `filepath.Dir()`, функція `DBPathNextTo` у `storage/sqlite`).
+  НЕ використовувати `%APPDATA%`, `%LOCALAPPDATA%`, домашній каталог чи робочий
+  каталог процесу; fallback-шляхів і створення каталогів извне не існує.
 
 ---
 
